@@ -1,6 +1,8 @@
-"scripts": {
-  "start": "react-scripts start",
-  "build": "react-scripts build",
-  "test": "jest", 
-  "lint": "eslint src/**/*.{js,jsx,ts,tsx}" 
+{
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "jest", 
+    "lint": "eslint src/**/*.{js,jsx,ts,tsx}" 
+  }
 }
