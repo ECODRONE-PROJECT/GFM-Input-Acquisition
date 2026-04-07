@@ -3,9 +3,9 @@ import { prisma } from '@/lib/prisma';
 
 const isAdmin = (request: Request) => request.headers.get('x-admin-mock') === 'true';
 
-export async function PUT(request: Request, context: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { id } = context.params;
+  const { id } = await params;
 
   try {
     const body = await request.json();
@@ -22,21 +22,21 @@ export async function PUT(request: Request, context: { params: { id: string } })
     });
 
     return NextResponse.json(updated);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request, context: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { id } = context.params;
+  const { id } = await params;
 
   try {
     await prisma.agriculturalInput.delete({
       where: { id }
     });
     return new NextResponse(null, { status: 204 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
   }
 }

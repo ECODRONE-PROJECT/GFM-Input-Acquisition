@@ -13,7 +13,7 @@ export async function GET() {
       orderBy: { createdAt: 'desc' }
     });
     return NextResponse.json(inputs);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch inputs' }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import React from 'react';
+import Image from 'next/image';
 
-export const Logo = ({ light = false }: { light?: boolean }) => {
+export const Logo = () => {
   return (
     <div style={{ 
       display: 'flex', 
@@ -10,11 +11,14 @@ export const Logo = ({ light = false }: { light?: boolean }) => {
       borderRadius: '0.5rem',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
     }}>
-      <img
+      <Image
         src="/gfm_logo.png"
         alt="Grow For Me Logo"
+        width={150}
+        height={40}
+        priority
         style={{
-          height: '40px', objectFit: 'contain',
+          height: '40px', objectFit: 'contain', width: 'auto'
         }}
       />
     </div>
