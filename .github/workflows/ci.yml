@@ -21,7 +21,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20' # Update this to match your project's version
+        node-version: '22' # Elevated to NodeJS 22 LTS to resolve Github Actions V4 deprecation limits
         cache: 'npm'
 
     # 5. Install dependencies cleanly
