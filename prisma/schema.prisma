@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         String   @default("FARMER")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model AgriculturalInput {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // "SEED" or "FERTILIZER"
+  price       Float
+  stock       Int      // Available bulk stock units
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
