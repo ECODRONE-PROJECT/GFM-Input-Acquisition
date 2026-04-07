@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Outfit } from 'next/font/google';
+import { CartProvider } from '@/context/CartContext';
 import './globals.css';
 
 // Outfit is a geometric sans-serif that closely mimics the structured technical elegance of Sophisto 
@@ -25,7 +26,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={outfit.className}>
       <body>
-        {children}
+        <CartProvider>
+          {children}
+        </CartProvider>
       </body>
     </html>
   );
