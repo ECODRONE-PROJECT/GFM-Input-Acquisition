@@ -3,13 +3,24 @@ import { prisma } from '@/lib/prisma';
 
 const isAdmin = (request: Request) => request.headers.get('x-admin-mock') === 'true';
 
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  try {
+    const input = await prisma.agriculturalInput.findUnique({ where: { id } });
+    if (!input) return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+    return NextResponse.json(input);
+  } catch {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { id } = await params;
 
   try {
     const body = await request.json();
-    const { name, type, price, stock } = body;
+    const { name, type, price, stock, location, imageUrl, size, weight, brand } = body;
 
     const updated = await prisma.agriculturalInput.update({
       where: { id },
@@ -18,6 +29,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         type,
         price: price !== undefined ? parseFloat(price) : undefined,
         stock: stock !== undefined ? parseInt(stock, 10) : undefined,
+        location,
+        imageUrl,
+        size,
+        weight,
+        brand
       }
     });
 

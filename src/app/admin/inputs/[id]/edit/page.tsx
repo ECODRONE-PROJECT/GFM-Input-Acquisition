@@ -1,30 +1,54 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import Link from 'next/link';
 
-export default function NewInput() {
+export default function EditInput({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [formData, setFormData] = useState({ 
     name: '', type: 'SEED', price: '', stock: '', location: '', imageUrl: '', size: '', weight: '', brand: '' 
   });
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [id, setId] = useState<string>('');
   const [errorModal, setErrorModal] = useState({ isOpen: false, message: '' });
+
+  useEffect(() => {
+    params.then(p => {
+      setId(p.id);
+      fetch(`/api/admin/inputs/${p.id}`)
+        .then(res => res.json())
+        .then(data => {
+            setFormData({
+                name: data.name || '',
+                type: data.type || 'SEED',
+                price: data.price?.toString() || '',
+                stock: data.stock?.toString() || '',
+                location: data.location || '',
+                imageUrl: data.imageUrl || '',
+                size: data.size || '',
+                weight: data.weight || '',
+                brand: data.brand || ''
+            });
+            setLoading(false);
+        });
+    });
+  }, [params]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/inputs`, {
-        method: 'POST',
+      const res = await fetch(`/api/admin/inputs/${id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-admin-mock': 'true' },
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) throw new Error('Failed to create new input');
+      if (!res.ok) throw new Error('Update failed');
       router.push('/admin');
     } catch (err: any) {
       setErrorModal({ isOpen: true, message: err.message });
@@ -32,19 +56,25 @@ export default function NewInput() {
     }
   };
 
+  const handleStockOut = () => {
+    setFormData(prev => ({ ...prev, stock: '0' }));
+  };
+
+  if (loading) return <div style={{ padding: '2rem' }}>Loading CMS Editor...</div>;
+
   return (
     <div style={{ maxWidth: '750px' }}>
       <Modal 
         isOpen={errorModal.isOpen} 
         onClose={() => setErrorModal({ isOpen: false, message: '' })} 
-        title="Admin Creation Error" 
+        title="Admin Modification Error" 
         message={errorModal.message} 
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#111827' }}>Create New Catalog Item</h1>
-          <p style={{ color: '#64748b', marginTop: '0.25rem' }}>Inject new agricultural assets into the public marketplace.</p>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#111827' }}>Edit Catalog Input</h1>
+          <p style={{ color: '#64748b', marginTop: '0.25rem' }}>Update product metrics, dimension properties, and pricing securely</p>
         </div>
         <Link href="/admin" style={{ color: '#475569', textDecoration: 'none', fontWeight: 600 }}>
           Cancel
@@ -63,7 +93,7 @@ export default function NewInput() {
             </div>
             <div style={{ flex: 1 }}>
               <Input 
-                label="Brand (Optional)" id="brand" 
+                label="Brand" id="brand" 
                 value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value })} 
               />
             </div>
@@ -88,25 +118,32 @@ export default function NewInput() {
                 value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} 
               />
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, position: 'relative' }}>
               <Input 
                 label="Available Stock" id="stock" type="number" required 
                 value={formData.stock} onChange={e => setFormData({ ...formData, stock: e.target.value })} 
               />
+              <button 
+                type="button" 
+                onClick={handleStockOut}
+                style={{ position: 'absolute', right: '10px', top: '35px', padding: '0.25rem 0.5rem', backgroundColor: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Zero Out
+              </button>
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: '1.5rem' }}>
             <div style={{ flex: 1 }}>
               <Input 
-                label="Weight (Optional)" id="weight" 
+                label="Weight" id="weight" 
                 value={formData.weight} onChange={e => setFormData({ ...formData, weight: e.target.value })} 
                 placeholder="e.g. 50kg, 250g"
               />
             </div>
             <div style={{ flex: 1 }}>
               <Input 
-                label="Size (Optional)" id="size" 
+                label="Size" id="size" 
                 value={formData.size} onChange={e => setFormData({ ...formData, size: e.target.value })} 
                 placeholder="e.g. Large Sack, 50x30cm"
               />
@@ -126,7 +163,7 @@ export default function NewInput() {
           />
 
           <div style={{ marginTop: '1.5rem' }}>
-            <Button type="submit" isLoading={saving}>Commit to Storefront</Button>
+            <Button type="submit" isLoading={saving}>Commit Changes to Storefront</Button>
           </div>
         </form>
       </div>

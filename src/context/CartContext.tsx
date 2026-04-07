@@ -27,6 +27,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Re-hydrate session cart
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsClient(true);
     try {
       const saved = localStorage.getItem('gfm_farmer_cart');

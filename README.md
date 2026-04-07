@@ -1,29 +1,42 @@
-# Grow For Me - Input Acquisition System
+# Grow For Me - Input Acquisition Platform
 
-This system comprises a modern web environment focused specifically on the "Inputs Acquisition" aspect, aggregating demand organically for seeds, fertilizers, and equipment.
+A robust Next.js e-commerce and administrative platform designed to connect smallholder farmers with vital agricultural inputs like seeds and fertilizer. It features a responsive, dynamic storefront with cart management, a secure checkout pipeline, and a comprehensive CMS for granular inventory control.
 
-## Technical Architecture
-- **Framework**: Next.js 14 App Router (Fuses Frontend and Backend internally for optimized performance).
-- **Styling Paradigm**: Vanilla CSS infused dynamically aligning perfectly with GrowForMe branding guidelines.
-- **Persistence Layer**: Prisma ORM with local SQLite support representing decoupled scalable logic.
-- **Auth Strategy**: Embedded bcrypt TDD-tested verification bridging explicit API endpoints.
+## 🚀 Getting Started
 
-## Operations and Running (Local)
-1. Install Node modules: `npm install`
-2. Sync Prisma structures: `npx prisma db push`
-3. Launch environment: `npm run dev`
+### Prerequisites
+- Node.js 18+ or 20+ installed
+- NPM, Yarn, or PNPM package manager
 
-Visit: `http://localhost:3000`
+### Installation
+1. Clone the repository and install dependencies:
+   ```bash
+   npm install
+   ```
 
-## Containerization
-To ensure consistent execution without environment disparities, the entire stack (both frontend UI and foundational backend APIs natively combined via Next.js standalone tracing) is Dockerized.
-```bash
-docker-compose up --build -d
-```
-The application reliably surfaces via `http://localhost:3000` executing securely inside the container.
+2. Setup the internal Database natively (via Prisma):
+   ```bash
+   npx prisma db push
+   npx prisma generate
+   ```
 
-## Quality Assurance & TDD
-Verified utilizing `vitest` assertions specifically bridging local logic to secure endpoints efficiently. Run validations using:
-```bash
-npm run test
-```
+3. Run the development environment:
+   ```bash
+   npm run dev
+   ```
+
+## 🛒 Accessing the Storefront Endpoints
+Navigate to **`http://localhost:3000`** to view the main landing page and interactive portal.
+- **Store & Product Catalog**: `http://localhost:3000/shop` — This dashboard allows farmers to filter, sort, dynamically input raw quantities, and add items natively to their cart.
+- **Cart & Secured Checkout**: `http://localhost:3000/cart`
+
+## ⚙️ Accessing the Admin Dashboard CMS
+The Admin CMS acts as the strict moderator portal empowering team accounts to execute complete CRUD operations explicitly across all public inventory metrics.
+- **Admin Dashboard**: `http://localhost:3000/admin`
+- *Note: During local development iterations, the admin dashboard leverages a mock header intercept granting immediate execution capabilities securely eliminating the heavy JWT provider necessity.*
+
+## 🛠 Tech Stack Details
+- Next.js 15+ (App Router specifically)
+- React 19 Native Integration
+- Prisma ORM (SQLite binding natively)
+- High-Performance UI Automations utilizing `Vitest` and `React Testing Library`.
