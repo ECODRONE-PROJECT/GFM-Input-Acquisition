@@ -69,24 +69,24 @@ export default function Home() {
           </div>
         </section>
 
-        {/* WHAT WE DO SECTION (Solid White background blocking the image) */}
-        <section id="what-we-do" style={{ padding: '8rem 5%', backgroundColor: '#ffffff', borderTop: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontSize: '2.75rem', fontWeight: 800, marginBottom: '3rem', color: '#166534', letterSpacing: '-0.02em' }}>What We Do</h2>
+        {/* WHAT WE DO SECTION */}
+        <section id="what-we-do" style={{ padding: '8rem 5%', backgroundColor: '#103c1f', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <h2 style={{ fontSize: '2.75rem', fontWeight: 800, marginBottom: '3rem', color: '#ffffff', letterSpacing: '-0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>What We Do</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem' }}>
             <div>
-              <p style={{ fontSize: '1.25rem', lineHeight: 1.8, color: '#475569', marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '1.25rem', lineHeight: 1.8, color: '#e2e8f0', marginBottom: '1.5rem' }}>
                 We provide an e-commerce interface that allows farmers to order seeds, fertilizers, and other inputs, aggregating demand for bulk purchasing. Our operations ensure that logistics, quality control, and scale are handled professionally. 
               </p>
-              <p style={{ fontSize: '1.25rem', lineHeight: 1.8, color: '#475569' }}>
+              <p style={{ fontSize: '1.25rem', lineHeight: 1.8, color: '#e2e8f0' }}>
                 By clustering inputs centrally, farmers unlock economies of scale otherwise unavailable individually, guaranteeing access to high-grade industrial seeds precisely when planting cycles demand it most.
               </p>
             </div>
             <div style={{ 
-              backgroundColor: '#f8fafc', 
-              padding: '3rem', borderRadius: '1.5rem', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' 
+              backgroundColor: 'rgba(255, 255, 255, 0.12)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+              padding: '3rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.15)', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.2)' 
             }}>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem', color: '#0f172a' }}>Core Value Propositions</h3>
-              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', color: '#334155', lineHeight: 2.2, fontSize: '1.1rem' }}>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem', color: 'white' }}>Core Value Propositions</h3>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', color: '#e2e8f0', lineHeight: 2.2, fontSize: '1.1rem' }}>
                 <li>Direct linkages to verified seed and fertilizer producers.</li>
                 <li>Consolidated logistics for lower last-mile delivery costs.</li>
                 <li>Transparent commodity matching and bulk scaling.</li>
@@ -96,11 +96,11 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ABOUT US SECTION (Solid Slate background blocking the image) */}
-        <section id="about-us" style={{ padding: '8rem 5%', backgroundColor: '#f1f5f9', borderTop: '1px solid #e2e8f0' }}>
+        {/* ABOUT US SECTION (Dark Green 90% opacity to block busy background while retaining slight parallax) */}
+        <section id="about-us" style={{ padding: '8rem 5%', backgroundColor: 'rgba(5, 20, 10, 0.9)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '2.75rem', fontWeight: 800, marginBottom: '2rem', color: '#166534', letterSpacing: '-0.02em' }}>About Us</h2>
-            <p style={{ fontSize: '1.35rem', lineHeight: 1.8, color: '#334155' }}>
+            <h2 style={{ fontSize: '2.75rem', fontWeight: 800, marginBottom: '2rem', color: '#ffffff', letterSpacing: '-0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>About Us</h2>
+            <p style={{ fontSize: '1.35rem', lineHeight: 1.8, color: '#e2e8f0' }}>
               GrowForMe is a digital agriculture platform that connects smallholder farmers with financing, quality inputs, and markets. Founded with the mission to eliminate poverty across the agricultural belt, we empower rural farmers by integrating their supply chains heavily with automated tracking and technological oversight, ensuring global standards are met smoothly and efficiently.
             </p>
           </div>
