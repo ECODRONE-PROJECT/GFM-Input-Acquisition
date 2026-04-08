@@ -129,7 +129,7 @@ export default function Shop() {
             <button onClick={() => { setFilterType('ALL'); setSortOrder('NONE'); setInStockOnly(false); }} style={{ marginTop: '1rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', backgroundColor: '#166534', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Reset Filter Array</button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '2rem' }}>
+          <div className="shop-grid">
             {displayedProducts.map(product => {
               const qty = quantities[product.id] || 1;
               return (
