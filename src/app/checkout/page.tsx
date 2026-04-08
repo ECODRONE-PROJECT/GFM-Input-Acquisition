@@ -67,7 +67,7 @@ export default function CheckoutPage() {
         <CheckCircle size={80} color="#166534" style={{ marginBottom: '2rem' }} />
         <h1 style={{ fontSize: '3rem', fontWeight: 800, color: '#166534', marginBottom: '1rem' }}>Order Confirmed!</h1>
         <p style={{ color: '#475569', fontSize: '1.25rem', marginBottom: '3rem' }}>Your bulk capacities are natively locked for delivery.</p>
-        <Link href="/shop" style={{ backgroundColor: '#f5a623', color: 'white', padding: '1rem 2rem', borderRadius: '0.75rem', fontWeight: 800, textDecoration: 'none' }}>
+        <Link href="/shop" style={{ backgroundColor: '#c3d928', color: '#0C2D1C', padding: '1rem 2rem', borderRadius: '9999px', fontWeight: 800, textDecoration: 'none' }}>
           Back to Storefront
         </Link>
       </div>
@@ -113,7 +113,7 @@ export default function CheckoutPage() {
           <div style={{ borderBottom: '2px solid #f1f5f9', paddingBottom: '1.5rem', marginBottom: '2rem' }}>
             <h2 style={{ fontSize: '1.25rem', color: '#475569', marginBottom: '1rem' }}>Order Aggregation Summary</h2>
             <p style={{ fontSize: '1.1rem', color: '#334155', fontWeight: 600 }}>Total Items: {itemCount}</p>
-            <p style={{ fontSize: '1.75rem', color: '#f5a623', fontWeight: 900 }}>Total Due: GH₵ {total.toFixed(2)}</p>
+            <p style={{ fontSize: '1.75rem', color: '#0C2D1C', fontWeight: 900 }}>Total Due: GH₵ {total.toFixed(2)}</p>
           </div>
 
           <form onSubmit={handleProcessOrder}>

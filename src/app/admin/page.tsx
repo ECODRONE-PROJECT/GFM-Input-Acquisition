@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 export default function AdminDashboard() {
   const [inputs, setInputs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Sorting and Filtering states
   const [filterType, setFilterType] = useState('ALL');
   const [sortOrder, setSortOrder] = useState('NONE');
@@ -55,8 +55,8 @@ export default function AdminDashboard() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#111827' }}>Catalog Data Entry & Input</h1>
-          <p style={{ color: '#64748b', marginTop: '0.25rem' }}>Manage input items for the storefront.</p>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#0C2D1C' }}>Catalog Data Entry & Input</h1>
+          <p style={{ color: '#475569', marginTop: '0.25rem' }}>Manage input items for the storefront.</p>
         </div>
         <Link href="/admin/inputs/new">
           <Button>+ Add New Item</Button>
@@ -82,13 +82,13 @@ export default function AdminDashboard() {
 
           <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <thead style={{ backgroundColor: '#f1f3ee', borderBottom: '1px solid #e2e8f0' }}>
                 <tr>
-                  <th style={{ padding: '1rem', textAlign: 'left', color: '#475569', fontSize: '0.875rem' }}>Sub-Type</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', color: '#475569', fontSize: '0.875rem' }}>Item Name</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', color: '#475569', fontSize: '0.875rem' }}>Price (GH₵)</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', color: '#475569', fontSize: '0.875rem' }}>Stock (Bags)</th>
-                  <th style={{ padding: '1rem', textAlign: 'right', color: '#475569', fontSize: '0.875rem' }}>Actions</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', color: '#0C2D1C', fontSize: '0.875rem' }}>Category</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', color: '#0C2D1C', fontSize: '0.875rem' }}>Item Name</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', color: '#0C2D1C', fontSize: '0.875rem' }}>Price (GH₵)</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', color: '#0C2D1C', fontSize: '0.875rem' }}>Stock (Bags)</th>
+                  <th style={{ padding: '1rem', textAlign: 'right', color: '#0C2D1C', fontSize: '0.875rem' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -116,7 +116,7 @@ export default function AdminDashboard() {
                     <td style={{ padding: '1rem', fontWeight: 600 }}>{input.name} {input.brand && <span style={{ color: '#94a3b8', fontSize: '0.8rem', marginLeft: '0.25rem' }}>({input.brand})</span>}</td>
                     <td style={{ padding: '1rem' }}>₵ {input.price.toFixed(2)}</td>
                     <td style={{ padding: '1rem' }}>
-                        <span style={{ fontWeight: 600, color: input.stock === 0 ? '#ef4444' : '#0f172a' }}>{input.stock}</span>
+                      <span style={{ fontWeight: 600, color: input.stock === 0 ? '#ef4444' : '#0f172a' }}>{input.stock}</span>
                     </td>
                     <td style={{ padding: '1rem', textAlign: 'right' }}>
                       <Link href={`/admin/inputs/${input.id}/edit`} style={{ color: '#2563eb', fontWeight: 600, fontSize: '0.875rem', marginRight: '1rem', textDecoration: 'none' }}>

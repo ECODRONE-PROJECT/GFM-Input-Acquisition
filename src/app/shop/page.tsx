@@ -55,10 +55,10 @@ export default function Shop() {
 
       <nav style={{ 
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-        padding: '1.5rem 2rem', backgroundColor: 'rgba(16, 60, 31, 0.4)',
+        padding: '1.25rem 5%', backgroundColor: 'rgba(5, 32, 17, 0.9)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
         position: 'sticky', top: 0, zIndex: 50,
-        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
       }}>
         <Logo />
         <div style={{ display: 'flex', gap: '2.5rem', alignItems: 'center', color: 'white' }}>
@@ -143,7 +143,8 @@ export default function Shop() {
                     src={product.imageUrl || (product.type === 'SEED' ? '/seed.png' : '/fertilizer.png')} 
                     alt={product.name}
                     fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    loading="eager"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 25vw, 25vw"
                     style={{ objectFit: 'cover' }}
                   />
                   {product.stock === 0 && (
@@ -195,7 +196,7 @@ export default function Shop() {
                       </div>
                       <button 
                         onClick={() => addToCart({ ...product, quantity: qty })}
-                        style={{ flex: 1, backgroundColor: '#f5a623', color: 'white', border: 'none', borderRadius: '0.75rem', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', transition: 'background-color 0.2s', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)' }}
+                        style={{ flex: 1, backgroundColor: '#c3d928', color: '#0C2D1C', border: 'none', borderRadius: '0.75rem', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', transition: 'background-color 0.2s', boxShadow: '0 10px 15px -3px rgba(195, 217, 40, 0.15)' }}
                       >
                         Add to Cart
                       </button>
