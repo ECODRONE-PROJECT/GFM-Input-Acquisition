@@ -81,10 +81,10 @@ export function Navbar() {
           <Link href="/login" style={{
             padding: '0.75rem 1.5rem', color: '#FFFFFF',
             fontWeight: 800, fontSize: '0.9rem', textDecoration: 'none',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px'
+            position: 'relative', whiteSpace: 'nowrap'
           }}>
             Sign In
-            <span style={{ display: 'block', width: '70%', height: '2.5px', backgroundColor: '#c3d928', borderRadius: '9999px' }} />
+            <span style={{ position: 'absolute', bottom: '6px', left: '50%', transform: 'translateX(-50%)', width: '50%', height: '2.5px', backgroundColor: '#c3d928', borderRadius: '9999px', display: 'block' }} />
           </Link>
           <Link href="/register" style={{
             padding: '0.75rem 1.75rem', backgroundColor: '#c3d928', color: '#0C2D1C',
