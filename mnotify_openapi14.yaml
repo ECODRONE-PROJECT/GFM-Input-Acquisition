@@ -1,0 +1,5112 @@
+openapi: 3.1.0
+info:
+  version: ""
+  title: BMS Documentation
+  termsOfService: https://www.mnotifybms.com/terms-of-service/
+  contact:
+    email: info@mnotify.com
+    url: https://www.mnotifybms.com/contact
+  x-logo:
+    url: https://mnotifybms.com/wp-content/uploads/2023/04/bms-logo.png
+  description:
+    '<img src="/images/code_typing-pana.svg" alt="dev"> Welcome to the
+    BMS API v2.0! You can use our API to access BMS API endpoints, which can get information
+    from your account as well as sending data to your account.
+
+
+    We have language bindings in Curl, PHP, and Python! You can view code examples
+    in the dark area to the right, and you can switch the programming language of
+    the examples with the tabs in the top right.
+
+
+    For integration in other languages, please click Here or contact us : support@mnotify.com'
+tags:
+  - name: Authentication
+    description:
+      "BMS uses API keys to allow access to the API. You can register or\
+      \ login\n    for a new BMS API key by clicking <a\n    href=\"https://bms.mnotify.com/developer/api_v2\"\
+      >here</a>.<br>BMS expects for the API key to be included in all API requests to\
+      \ the\n    server as a GET parameter:\n\n<strong>Example</strong>\n\n    https://api.mnotify.com/api/template?key=YOUR_API_KEY"
+  - name: Request
+    description: "This API is built with REST and it uses HTTP verbs.
+
+
+      Meaning every request made to the api must be RESTful with HTTP verbs such as
+      GET, POST, PUT and DELETE requests."
+  - name: Response
+    description: All HTTP responses are of JSON format.
+  - name: SMS
+    description:
+      Send Bulk SMS to individuals or groups. Each campaign consists of both
+      sending using quick or group.
+  - name: Voice
+    description:
+      Send Bulk Voice Call to individuals or groups. Each campaign consists
+      of both sending using quick or group.
+  - name: IVR (Inbound)
+    description: This documentation is to guide for developers to integrate mNotify's Voice Interactive Response APIs.
+  # - name: Outbound IVR Calls
+  #   description: '<strong>Outbound IVR Endpoints</strong>
+
+
+  #     https://readthedocs.mnotify.com/ivr_2ef59.html
+
+
+  #     <p class="alert-primary"><i class="las la-info-circle" style="font-size:24px"></i>Visit
+  #     the URL above to know more about our outbound IVR calls.</p>
+
+  #     '
+  #   externalDocs:
+  #     description: See more on outbound IVR here
+  #     url: https://readthedocs.mnotify.com/ivr_2ef59.html
+  - name: Voice IVR Scenarios (Outbound)
+    description: >-
+      Design custom interactive voice response flows tailored to your communication needs. 
+      With these scenarios, you can predefine call flows, enabling automated interactions with your recipients.
+      
+  - name: Scenarios Child Flow (Outbound)
+    description: >-
+      Design custom interactive voice response flows tailored to your communication needs. 
+      With these scenarios, you can predefine call flows, enabling automated interactions with your recipients.
+
+  - name: USSD
+    description: |
+      The purpose of this document is to provide a comprehensive guide for integrating mNotify's USSD service into your application. It contains all the necessary specifications and details about the communication API parameters, which developers can use for seamless integration.
+  - name: Message Template
+    description:
+      Message templates are custom messages that you can create in your account
+      so that you can reuse it to send messages to your recipients at any time.
+  - name: Group
+    description:
+      Groups are created in your account to store your contacts in a more
+      organized way.
+  - name: Contact
+    description: Add contacts to your groups in order to send message to them
+paths:
+  /template?key=YOUR_API_KEY:
+    get:
+      tags:
+        - Message Template
+      summary: Get all Message Templates
+      description:
+        "This endpoint retrieves all your message templates\n\n    GET\
+        \ https://api.mnotify.com/api/template\n"
+      operationId: template
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Get_template"
+              example:
+                status: success
+                template_list:
+                  - _id: 1
+                    title: Testing Message
+                    content: Just trying to test the message
+                    type: Local SMS Template
+                  - _id: 2
+                    title: HAPPY BIRTHDAY
+                    content: This day we would like to wish you a happy birthday.
+                    type: Birthday Message Template
+      x-codeSamples:
+        - lang: curl
+          source: curl -X GET "https://api.mnotify.com/api/template?key=YOUR_API_KEY"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/template';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \n    $ch = curl_init();\n    curl_setopt($ch, CURLOPT_URL, $url);\n   \
+            \ curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"GET\");\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+            endPoint = 'https://api.mnotify.com/api/template'
+
+            apiKey = 'YOUR_API_KEY'
+
+            url = endPoint + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json();
+
+            "
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/template'\n\
+            apiKey = 'YOUR_API_KEY'\nurl = endPoint + '?key=' + apiKey\nconst config\
+            \ = {method : 'get', path: url}\naxios(config)  \n.then(function (response)\
+            \  {\nconsole.log(JSON.stringify(response.data));  \n})  \n.catch(function\
+            \ (error)  {\nconsole.log(error);  \n})\n"
+  /template/<id>:
+    get:
+      tags:
+        - Message Template
+      summary: Get a Specific Message Template
+      description:
+        "Retrieve a specific message template with id as a parameter.\n\
+        \n<strong>HTTP Request</strong>\n\n    GET https://api.mnotify.com/api/template/<id>\n"
+      operationId: template/id
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of specified message template
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Get_specific_template"
+              example:
+                status: success
+                template_list:
+                  _id: 1
+                  title: Testing Message
+                  content: Just trying to test the message
+                  type: Local SMS Template
+      x-codeSamples:
+        - lang: curl
+          source: curl -X GET "https://api.mnotify.com/api/template/1?key=YOUR_API_KEY"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/template';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $id = 1;\n    $url = $endPoint . '/'\
+            \ . $id . '?key=' . $apiKey;\n\n    $ch = curl_init();\n    curl_setopt($ch,\
+            \ CURLOPT_URL, $url);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n\
+            \    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, \"GET\");\n    $result = curl_exec($ch);\n\
+            \    $result = json_decode($result, TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/template'
+
+            apiKey = 'YOUR_API_KEY'
+
+            id = 1
+
+            url = endPoint + '/' + id + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/template'\n\
+            apiKey = 'YOUR_API_KEY'\nid =  = '1'\nurl = endPoint + '/' + id + '?key='\
+            \ + apiKey\nconst config = {method : 'get', path: url}\naxios(config)  \n\
+            .then(function (response)  {\nconsole.log(JSON.stringify(response.data));\
+            \  \n})  \n.catch(function (error)  {\nconsole.log(error);  \n})\n"
+  /template:
+    post:
+      tags:
+        - Message Template
+      summary: Add Message Template
+      description:
+        "Add a message template with data..\n\n<strong>HTTP Request</strong>\n\
+        \n    POST https://api.mnotify.com/api/template\n <p class=\"alert-primary\"\
+        ><i class=\"las la-info-circle\" style=\"font-size:24px\"></i>the response\
+        \ parameter _id returned in the JSON response is the id of the newly created\
+        \ message template. You can save it somewhere in your personal DB.</p>\n <span\
+        \ class=\"alert-success\" style=\"margin-top:14px\"><i class=\"las la-check-circle\"\
+        \ style=\"font-size:24px\"></i>You can add placeholders for firstname: [fname],\
+        \ fullname: [fullname], title and lastname: [lname]</span>\n"
+      operationId: template/add
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: title
+          in: path
+          description: Title of message template
+          required: true
+          schema:
+            type: string
+        - name: body
+          in: path
+          description: Body of message template
+          required: true
+          schema:
+            type: text
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Add_template"
+              example:
+                status: success
+                _id: "3"
+      x-codeSamples:
+        - lang: curl
+          source:
+            'curl -X POST "https://api.mnotify.com/api/template?key=YOUR_API_KEY"
+
+            -H "Content-Type:application/json"
+
+            -d ''{"title":"API testing","body":"Best message template"}''
+
+            '
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/template';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \    $data = [\n      'title' => 'API testing',\n      'body' => 'Best message\
+            \ template' \n    ];\n\n    $ch = curl_init();\n    $headers = array();\n\
+            \    $headers[] = \"Content-Type: application/json\";\n    curl_setopt($ch,\
+            \ CURLOPT_HTTPHEADER, $headers);\n    curl_setopt($ch, CURLOPT_URL, $url);\n\
+            \    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch,\
+            \ CURLOPT_CUSTOMREQUEST, \"POST\");\n    curl_setopt($ch, CURLOPT_POSTFIELDS,\
+            \ $data);\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source:
+            "import requests\nendPoint = 'https://api.mnotify.com/api/template'\n\
+            apiKey = 'YOUR_API_KEY'\ndata = {\n  'title': 'API testing',\n  'body':\
+            \ 'Best message template'\n}\nurl = endPoint + '?key=' + apiKey\nresponse\
+            \ = requests.post(url, data)\ndata = response.json()\n"
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/template'\n\
+            apiKey = 'YOUR_API_KEY'\nconst data = {\n    'title': 'API testing',\n \
+            \   'body': 'Best message template'\n}\nurl = endPoint + '?key=' + apiKey\n\
+            const config = {\n        method: 'post',\n        path: url,\n        headers\
+            \ = {\n        'Accept': 'application/json'\n        },\n        data :\
+            \ data\n};\naxios(config)  \n.then(function (response)  {\nconsole.log(JSON.stringify(response.data));\
+            \  \n})  \n.catch(function (error)  {\nconsole.log(error);  \n})\n"
+  "/template/<id> ":
+    put:
+      tags:
+        - Message Template
+      summary: Update a Message Template
+      description:
+        "This endpoint updates a specific message template\n\n<strong>HTTP\
+        \ Request</strong>\n\n    PUT https://api.mnotify.com/api/template/<id>\n\
+        \  <p class=\"alert-danger\"><i class=\"las la-info-circle\" style=\"font-size:24px\"\
+        ></i>the id must be specified in both the url and the json parameters for\
+        \ validation purpose</p>\n"
+      operationId: template/update
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: title
+          in: path
+          description: Title of message template
+          required: true
+          schema:
+            type: string
+        - name: body
+          in: path
+          description: Body of message template
+          required: true
+          schema:
+            type: text
+        - name: id
+          in: path
+          description: id of message template to update
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Update_template"
+              example:
+                status: success
+                message: template updated
+      x-codeSamples:
+        - lang: curl
+          source:
+            "curl -X PUT  \"https://api.mnotify.com/api/template/3?key=YOUR_API_KEY\"\
+            \n-H \"Content-Type:application/json\" \n-d '{\"title\":\"API testing\"\
+            ,\"body\":\"Best message template\",\"id\":\"3\"}'\n"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/template';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $id = 3;\n    $url = $endPoint . '/'\
+            \ . $id . '?key=' . $apiKey;\n    $data = [\n        'title' => 'API testing',\n\
+            \        'body' => 'Best message template' ,\n        'id' => 3\n    ];\n\
+            \n    $ch = curl_init();\n    $headers = array();\n    $headers[] = \"Content-Type:\
+            \ application/json\";\n    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);\n\
+            \    curl_setopt($ch, CURLOPT_URL, $url);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER,\
+            \ 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, \"PUT\");\n    curl_setopt($ch,\
+            \ CURLOPT_POSTFIELDS, $data);\n    $result = curl_exec($ch);\n    $result\
+            \ = json_decode($result, TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source:
+            "import requests\n\nendPoint = 'https://api.mnotify.com/api/template'\n\
+            apiKey = 'YOUR_API_KEY'\nid = 3\ndata = {\n  'title': 'API testing',\n \
+            \ 'body': 'Best message template',\n  'id': 3\n}\nurl = endPoint + '/' +\
+            \ id + '?key=' + apiKey\nresponse = requests.put(url, data)\ndata = response.json()\n"
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/template'\n\
+            apiKey = 'YOUR_API_KEY'\nid = 3\n\nconst data = {\n    'title': 'API testing',\n\
+            \    'body': 'Best message template'\n    'id': '3'\n}\nurl = endPoint +\
+            \ '/' + id + '?key=' + apiKey\nconst config = {\n        method: 'put',\n\
+            \        path: url,\n        headers = {\n        'Accept': 'application/json'\n\
+            \        },\n        data : data\n};\naxios(config)  \n.then(function (response)\
+            \  {\nconsole.log(JSON.stringify(response.data));  \n})  \n.catch(function\
+            \ (error)  {\nconsole.log(error);  \n})\n"
+  "/template/<id>  ":
+    delete:
+      tags:
+        - Message Template
+      summary: Delete Message Template
+      description:
+        "This endpoint updates a specific message template\n\n<strong>HTTP\
+        \ Request</strong>\n\n    DELETE https://api.mnotify.com/api/template/<id>\n"
+      operationId: template/delete
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of message template to update
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delete_template"
+              example:
+                status: success
+                message: template deleted
+      x-codeSamples:
+        - lang: curl
+          source: curl -X DELETE "https://api.mnotify.com/api/template/3?key=YOUR_API_KEY"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/template';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $id = 3;\n    $url = $endPoint . '/'\
+            \ . $id . '?key=' . $apiKey;\n\n    $ch = curl_init();\n    curl_setopt($ch,\
+            \ CURLOPT_URL, $url);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n\
+            \    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, \"DELETE\");\n    $result =\
+            \ curl_exec($ch);\n    $result = json_decode($result, TRUE);\n    curl_close($ch);\n\
+            ?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/template'
+
+            apiKey = 'YOUR_API_KEY'
+
+            id = 3
+
+            url = endPoint + '/' + id + '?key=' + apiKey
+
+            response = requests.delete(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/template'\n\
+            apiKey = 'YOUR_API_KEY'\nid = 3\n\nurl = endPoint + '/' + id + '?key=' +\
+            \ apiKey\nconst config = {\n        method: 'delete',\n        path: url,\n\
+            \        headers = {\n        'Accept': 'application/json'\n        },\n\
+            };\naxios(config)  \n.then(function (response)  {\nconsole.log(JSON.stringify(response.data));\
+            \  \n})  \n.catch(function (error)  {\nconsole.log(error);  \n})\n"
+  /group:
+    get:
+      tags:
+        - Group
+      summary: Get all Groups
+      description: This endpoint retrieves all your groups.
+      operationId: group
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Get_group"
+              example:
+                status: success
+                group_list:
+                  - _id: 1
+                    group_name: Test Group
+                    total_contacts: 10
+                  - _id: 2
+                    group_name: mNotify Staff
+                    total_contacts: 200
+      x-codeSamples:
+        - lang: curl
+          source: curl -X GET "https://api.mnotify.com/api/group?key=YOUR_API_KEY"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/group';\n   \
+            \ $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \n    $ch = curl_init();\n    curl_setopt($ch, CURLOPT_URL, $url);\n   \
+            \ curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"GET\");\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/group'
+
+            apiKey = 'YOUR_API_KEY'
+
+            url = endPoint + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/group'\n\
+            apiKey = 'YOUR_API_KEY'\nurl = endPoint + '?key=' + apiKey\nconst config\
+            \ = {method : 'get', path: url}\naxios(config)  \n.then(function (response)\
+            \  {\nconsole.log(JSON.stringify(response.data));  \n})  \n.catch(function\
+            \ (error)  {\nconsole.log(error);  \n})\n"
+  /group/<id>:
+    get:
+      tags:
+        - Group
+      summary: Get a Specific Group
+      description: Retrieve a specific group with id as a parameter.
+      operationId: group/id
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of specified group
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Get_specific_group"
+              example:
+                status: success
+                group:
+                  _id: 1
+                  group_name: Test Group
+                  total_contacts: 10
+      x-codeSamples:
+        - lang: curl
+          source: curl -X GET "https://api.mnotify.com/api/group/1?key=YOUR_API_KEY"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/group';\n   \
+            \ $apiKey = 'YOUR_API_KEY';\n    $id = 1;\n    $url = $endPoint . '/' .\
+            \ $id . '?key=' . $apiKey;\n\n    $ch = curl_init();\n    curl_setopt($ch,\
+            \ CURLOPT_URL, $url);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n\
+            \    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, \"GET\");\n    $result = curl_exec($ch);\n\
+            \    $result = json_decode($result, TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/group'
+
+            apiKey = 'YOUR_API_KEY'
+
+            id = 1
+
+            url = endPoint + '/' + id + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/group'\n\
+            apiKey = 'YOUR_API_KEY'\nid = 3\nurl = endPoint + '/' + id + '?key=' + apiKey\n\
+            const config = {\n        method: 'get',\n        path: url\n        },\n\
+            };\naxios(config)  \n.then(function (response)  {\nconsole.log(JSON.stringify(response.data));\
+            \  \n})  \n.catch(function (error)  {\nconsole.log(error);  \n})\n"
+  "/group ":
+    post:
+      tags:
+        - Group
+      summary: Add a Group
+      description:
+        "Add a group with data.\n\n<strong>HTTP Request</strong>\n\n  \
+        \  POST https://api.mnotify.com/api/group\n\n<p class=\"alert-primary\"><i\
+        \ class=\"las la-info-circle\" style=\"font-size:24px\"></i>the response parameter\
+        \ _id returned in the JSON response is the id of the newly created group.\
+        \ You can save it somewhere in your personal DB.</p>\n"
+      operationId: group/add
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: group_name
+          in: path
+          description: Name of group
+          required: true
+          schema:
+            type: string
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Add_group"
+              example:
+                status: success
+                _id: "3"
+      x-codeSamples:
+        - lang: curl
+          source:
+            "curl -X POST \"https://api.mnotify.com/api/group?key=YOUR_API_KEY\"\
+            \n-H \"Content-Type:application/json\" \n-d '{\"group_name\":\"Group Testing\"\
+            }'\n"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/group';\n   \
+            \ $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \    $data = [\n      'group_name' => 'Group Testing'\n    ];\n\n    $ch\
+            \ = curl_init();\n    $headers = array();\n    $headers[] = \"Content-Type:\
+            \ application/json\";\n    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);\n\
+            \    curl_setopt($ch, CURLOPT_URL, $url);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER,\
+            \ 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, \"POST\");\n    curl_setopt($ch,\
+            \ CURLOPT_POSTFIELDS, $data);\n    $result = curl_exec($ch);\n    $result\
+            \ = json_decode($result, TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source:
+            "import requests\n\nendPoint = 'https://api.mnotify.com/api/group'\n\
+            apiKey = 'YOUR_API_KEY'\ndata = {\n  'group_name': 'Group Testing'\n}\n\
+            url = endPoint + '?key=' + apiKey\nresponse = requests.post(url, data)\n\
+            data = response.json()\nThe above command returns JSON structured like this:\n\
+            \n{\n    \"status\": \"success\",\n    \"_id\": \"3\"\n}\n"
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/group'\n\
+            apiKey = 'YOUR_API_KEY'\nconst data = {\n    'group_name': 'Group Testing',\n\
+            }\nurl = endPoint + '?key=' + apiKey\nconst config = {\n        method:\
+            \ 'post',\n        path: url,\n        headers = {\n        'Accept': 'application/json'\n\
+            \        },\n        data : data\n};\naxios(config)  \n.then(function (response)\
+            \  {\nconsole.log(JSON.stringify(response.data));  \n})  \n.catch(function\
+            \ (error)  {\nconsole.log(error);  \n})\n"
+  "/group/<id> ":
+    put:
+      tags:
+        - Group
+      summary: Update a Group
+      description:
+        "This endpoint updates a specific group\n\n<strong>HTTP Request</strong>\n\
+        \n    PUT https://api.mnotify.com/api/group/<id>\n\n<p class=\"alert-danger\"\
+        ><i class=\"las la-info-circle\" style=\"font-size:24px\"></i>the id must\
+        \ be specified in both the url and the json parameters for validation purpose</p>\n"
+      operationId: group/update
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: group_name
+          in: path
+          description: Group name
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of group to update
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Update_group"
+              example:
+                status: success
+                message: group updated
+      x-codeSamples:
+        - lang: curl
+          source:
+            "curl -X PUT  \"https://api.mnotify.com/api/group/3?key=YOUR_API_KEY\"\
+            \n-H \"Content-Type:application/json\" \n-d '{\"group_name\":\"Group testing\"\
+            ,\"id\":\"3\"}'\n"
+        - lang: php
+          source:
+            "<?php\n   $endPoint = 'https://api.mnotify.com/api/group';\n   $apiKey\
+            \ = 'YOUR_API_KEY';\n   $id = 3;\n   $url = $endPoint . '/' . $id . '?key='\
+            \ . $apiKey;\n   $data = [\n       'title' => 'Group testing',\n       'id'\
+            \ => 3\n   ];\n\n   $ch = curl_init();\n   $headers = array();\n   $headers[]\
+            \ = \"Content-Type: application/json\";\n   curl_setopt($ch, CURLOPT_HTTPHEADER,\
+            \ $headers);\n   curl_setopt($ch, CURLOPT_URL, $url);\n   curl_setopt($ch,\
+            \ CURLOPT_RETURNTRANSFER, 1);\n   curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"PUT\");\n   curl_setopt($ch, CURLOPT_POSTFIELDS, $data);\n   $result\
+            \ = curl_exec($ch);\n   $result = json_decode($result, TRUE);\n   curl_close($ch);\n\
+            \ ?>\n"
+        - lang: python
+          source:
+            "import requests\n\nendPoint = 'https://api.mnotify.com/api/group'\n\
+            apiKey = 'YOUR_API_KEY'\nid = 3\ndata = {\n  'title': 'Group testing',\n\
+            \  'id': 3\n}\nurl = endPoint + '/' + id + '?key=' + apiKey\nresponse =\
+            \ requests.put(url, data)\ndata = response.json()\n"
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/group'\n\
+            apiKey = 'YOUR_API_KEY'\nid = 3\n\nconst data = {\n    'title': 'Group Testing',\n\
+            \    'id': '3'\n}\nurl = endPoint + '/' + id + '?key=' + apiKey\nconst config\
+            \ = {\n        method: 'put',\n        path: url,\n        headers = {\n\
+            \        'Accept': 'application/json'\n        },\n        data : data\n\
+            };\naxios(config)  \n.then(function (response)  {\nconsole.log(JSON.stringify(response.data));\
+            \  \n})  \n.catch(function (error)  {\nconsole.log(error);  \n})\n"
+  "/group/<id>  ":
+    delete:
+      tags:
+        - Group
+      summary: Delete a Group
+      description:
+        "Delete a specific group with id as parameter\n\n<strong>HTTP Request</strong>\n\
+        \n    DELETE https://api.mnotify.com/api/group/<id>\n"
+      operationId: group/delete
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of specified group to delete
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delete_group"
+              example:
+                status: success
+                message: group and associated contacts deleted
+      x-codeSamples:
+        - lang: curl
+          source: curl -X DELETE "https://api.mnotify.com/api/group/3?key=YOUR_API_KEY"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/group';\n   \
+            \ $apiKey = 'YOUR_API_KEY';\n    $id = 3;\n    $url = $endPoint . '/' .\
+            \ $id . '?key=' . $apiKey;\n\n    $ch = curl_init();\n    curl_setopt($ch,\
+            \ CURLOPT_URL, $url);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n\
+            \    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, \"DELETE\");\n    $result =\
+            \ curl_exec($ch);\n    $result = json_decode($result, TRUE);\n    curl_close($ch);\n\
+            ?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/group'
+
+            apiKey = 'YOUR_API_KEY'
+
+            id = 3
+
+            url = endPoint + '/' + id + '?key=' + apiKey
+
+            response = requests.delete(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/group'\n\
+            apiKey = 'YOUR_API_KEY'\nid = 3\nurl = endPoint + '/' + id + '?key=' + apiKey\n\
+            const config = {\n        method: 'delete',\n        path: url,\n      \
+            \  headers = {\n        'Accept': 'application/json'\n        },\n};\naxios(config)\
+            \  \n.then(function (response)  {\nconsole.log(JSON.stringify(response.data));\
+            \  \n})  \n.catch(function (error)  {\nconsole.log(error);  \n})\n"
+  /contact:
+    get:
+      tags:
+        - Contact
+      summary: Get all Contacts
+      description:
+        "This endpoint retrieves all your contacts.\n\n<strong>HTTP Request</strong>\n\
+        \n    GET https://api.mnotify.com/api/contact\n"
+      operationId: contact/get/all
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Get_contact"
+              example:
+                status: success
+                contacts_list:
+                  - _id: 1
+                    phone: 0203xxxxxx
+                    title: Mr
+                    firstname: Bruce
+                    lastname: Wayne
+                    email: bruce.wayne@domain.com
+                    dob: "2017-11-25"
+                  - _id: 2
+                    phone: 0249xxxxxx
+                    title: Mr
+                    firstname: Clark
+                    lastname: Kent
+                    email: clark.kent@domain.com
+                    dob: "2017-11-25"
+      x-codeSamples:
+        - lang: curl
+          source: curl -X GET "https://api.mnotify.com/api/contact?key=YOUR_API_KEY"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/contact';\n \
+            \   $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \n    $ch = curl_init();\n    curl_setopt($ch, CURLOPT_URL, $url);\n   \
+            \ curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"GET\");\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/contact'
+
+            apiKey = 'YOUR_API_KEY'
+
+            url = endPoint + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/contact'\n\
+            apiKey = 'YOUR_API_KEY'\nurl = endPoint + '?key=' + apiKey\nconst config\
+            \ = {method : 'get', path: url}\naxios(config)  \n.then(function (response)\
+            \  {\nconsole.log(JSON.stringify(response.data));  \n})  \n.catch(function\
+            \ (error)  {\nconsole.log(error);  \n})\n"
+  /contact/group/<group_id>:
+    get:
+      tags:
+        - Contact
+      summary: Get Group Contacts
+      description:
+        "Retrieves contacts which belongs to a particular group with group\
+        \ id as a parameter.\n\n<strong>HTTP Request</strong>\n\n    GET https://api.mnotify.com/api/group/<id>\n"
+      operationId: contact/group/id
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: group_id
+          in: path
+          description: id of specified group
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Get_group_contact"
+              example:
+                status: success
+                contact:
+                  _id: 2
+                  group_id: 1
+                  phone: 0249xxxxxx
+                  title: Mr
+                  firstname: Clark
+                  lastname: Kent
+                  email: clark.kent@domain.com
+                  dob: "2017-11-25"
+      x-codeSamples:
+        - lang: curl
+          source: curl -X GET "https://api.mnotify.com/api/contact/group/1?key=YOUR_API_KEY"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/contact/group';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $groupId = 1;\n    $url = $endPoint\
+            \ . '/' . $groupId . '?key=' . $apiKey;\n\n    $ch = curl_init();\n    curl_setopt($ch,\
+            \ CURLOPT_URL, $url);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n\
+            \    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, \"GET\");\n    $result = curl_exec($ch);\n\
+            \    $result = json_decode($result, TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/contact/group'
+
+            apiKey = 'YOUR_API_KEY'
+
+            groupId = 1
+
+            url = endPoint + '/' + groupId + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/contact/group'\n\
+            apiKey = 'YOUR_API_KEY'\ngroupId = 3\nurl = endPoint + '/' + id + '?key='\
+            \ + apiKey\nconst config = {\n        method: 'get',\n        path: url\n\
+            \        },\n};\naxios(config)  \n.then(function (response)  {\nconsole.log(JSON.stringify(response.data));\
+            \  \n})  \n.catch(function (error)  {\nconsole.log(error);  \n})\n"
+  /contact/<id>:
+    get:
+      tags:
+        - Contact
+      summary: Get a Contact
+      description:
+        "Retrieve a specific contact with id as a parameter.\n\n<strong>HTTP\
+        \ Request</strong>\n\n    GET https://api.mnotify.com/api/contact/<id>\n"
+      operationId: contact/get
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of specified contact
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Get_specific_contact"
+              example:
+                status: success
+                contact:
+                  _id: 1
+                  phone: 0203xxxxxx
+                  title: Mr
+                  firstname: Bruce
+                  lastname: Wayne
+                  email: bruce.wayne@domain.com
+                  dob: "2017-11-25"
+      x-codeSamples:
+        - lang: curl
+          source: curl -X GET "https://api.mnotify.com/api/contact/1?key=YOUR_API_KEY"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/contact';\n \
+            \   $apiKey = 'YOUR_API_KEY';\n    $id = 1;\n    $url = $endPoint . '/'\
+            \ . $id . '?key=' . $apiKey;\n\n    $ch = curl_init();\n    curl_setopt($ch,\
+            \ CURLOPT_URL, $url);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n\
+            \    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, \"GET\");\n    $result = curl_exec($ch);\n\
+            \    $result = json_decode($result, TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/contact'
+
+            apiKey = 'YOUR_API_KEY'
+
+            id = 1
+
+            url = endPoint + '/' + id + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/contact'\n\
+            apiKey = 'YOUR_API_KEY'\nid = 3\nurl = endPoint + '/' + id + '?key=' + apiKey\n\
+            const config = {\n        method: 'get',\n        path: url\n        },\n\
+            };\naxios(config)  \n.then(function (response)  {\nconsole.log(JSON.stringify(response.data));\
+            \  \n})  \n.catch(function (error)  {\nconsole.log(error);  \n})\n"
+  /contact/<group_id>:
+    post:
+      tags:
+        - Contact
+      summary: Add a Contact
+      description:
+        "Add a contact to a group with data.\n\n<strong>HTTP Request</strong>\n\
+        \n    POST https://api.mnotify.com/api/contact/<group_id>\n<p class=\"alert-primary\"\
+        ><i class=\"las la-info-circle\" style=\"font-size:24px\"></i>the response\
+        \ parameter _id returned in the JSON response is the id of the newly created\
+        \ contact. You can save it somewhere in your personal DB.</p>\n"
+      operationId: contact/group_id
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: group_id
+          in: path
+          description: id of group you want to save contact to
+          required: true
+          schema:
+            type: int
+        - name: phone
+          in: path
+          description: Phone number of contact
+          required: true
+          schema:
+            type: int
+        - name: title
+          in: path
+          description: Title of contact eg Mr, Dr, Miss etc
+          required: true
+          schema:
+            type: int
+        - name: firstname
+          in: path
+          description: First name of contact
+          required: true
+          schema:
+            type: int
+        - name: lastname
+          in: path
+          description: Last name of contact
+          required: true
+          schema:
+            type: int
+        - name: email
+          in: path
+          description: Email name of contact
+          required: true
+          schema:
+            type: int
+        - name: dob
+          in: path
+          description: Date of birth of contact in YYYY-MM-DD format
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Add_a_contact"
+              example:
+                status: success
+                contact:
+                  status: success
+                  _id: 4
+                  _group_id: "1"
+      x-codeSamples:
+        - lang: curl
+          source:
+            "curl -X POST \"https://api.mnotify.com/api/contact/1?key=YOUR_API_KEY\"\
+            \n-H \"Content-Type:application/json\" \n-d '{\"phone\":\"0244698970\",\
+            \ \"title\":\"Dr\", \"firstname\":\"Stephen\", \"lastname\":\"Strange\"\
+            , \"email\": \"strange.smart@gmail.com\", \"dob\": \"1979-01-01\"}'\n"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/contact';\n \
+            \   $apiKey = 'YOUR_API_KEY';\n    $groupId = 1;\n    $url = $endPoint .\
+            \ '/' . $groupId . '?key=' . $apiKey;\n    $data = [\n      'phone' => '0244698970',\n\
+            \      'title' => 'Dr',\n      'firstname' => 'Stephen',\n      'lastname'\
+            \ => 'Strange',\n      'email' => 'strange.smart@gmail.com',\n      'dob'\
+            \ => '1979-01-01'\n    ];\n\n    $ch = curl_init();\n    $headers = array();\n\
+            \    $headers[] = \"Content-Type: application/json\";\n    curl_setopt($ch,\
+            \ CURLOPT_HTTPHEADER, $headers);\n    curl_setopt($ch, CURLOPT_URL, $url);\n\
+            \    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch,\
+            \ CURLOPT_CUSTOMREQUEST, \"POST\");\n    curl_setopt($ch, CURLOPT_POSTFIELDS,\
+            \ $data);\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source:
+            "import requests\n\nendPoint = 'https://api.mnotify.com/api/group'\n\
+            apiKey = 'YOUR_API_KEY'\ngroupId = 1\ndata = {\n  'phone': '0244698970',\n\
+            \  'title': 'Dr',\n  'firstname': 'Stephen',\n  'lastname': 'Strange',\n\
+            \  'email': 'strange.smart@gmail.com',\n  'dob': '1979-01-01',\n}\nurl =\
+            \ endPoint + '/' + groupId + '?key=' + apiKey\nresponse = requests.post(url,\
+            \ data)\ndata = response.json()\n"
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/contact'\n\
+            apiKey = 'YOUR_API_KEY'\nconst data = {\n    'phone': '0244698970',\n  \
+            \  'title': 'Dr',\n    'firstname': 'Strange',\n    'firstname': 'Stephen',\n\
+            \    'lastname': 'Strange',\n    'email': 'strange.smart@gmail.com'',\n\
+            \    'dob': '1979-01-01',\n\n}\nurl = endPoint + '?key=' + apiKey\nconst\
+            \ config = {\n        method: 'post',\n        path: url,\n        headers\
+            \ = {\n        'Accept': 'application/json'\n        },\n        data :\
+            \ data\n};\naxios(config)  \n.then(function (response)  {\nconsole.log(JSON.stringify(response.data));\
+            \  \n})  \n.catch(function (error)  {\nconsole.log(error);  \n})\n"
+  "/contact/<id> ":
+    put:
+      tags:
+        - Contact
+      summary: Update a Contact
+      description:
+        "This endpoint updates a specific contact\n\n<strong>HTTP Request</strong>\n\
+        \n    PUT https://api.mnotify.com/api/contact/<id>\n<p class=\"alert-danger\"\
+        ><i class=\"las la-info-circle\" style=\"font-size:24px\"></i>the id must\
+        \ be specified in both the url and the json parameters for validation purpose</p>\n"
+      operationId: contact/update
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of contact
+          required: true
+          schema:
+            type: int
+        - name: group_id
+          in: path
+          description: id of group you want to save contact to
+          required: true
+          schema:
+            type: int
+        - name: phone
+          in: path
+          description: Phone number of contact
+          required: true
+          schema:
+            type: int
+        - name: title
+          in: path
+          description: Title of contact eg Mr, Dr, Miss etc
+          required: true
+          schema:
+            type: int
+        - name: firstname
+          in: path
+          description: First name of contact
+          required: true
+          schema:
+            type: int
+        - name: lastname
+          in: path
+          description: Last name of contact
+          required: true
+          schema:
+            type: int
+        - name: email
+          in: path
+          description: Email name of contact
+          required: true
+          schema:
+            type: int
+        - name: dob
+          in: path
+          description: Date of birth of contact in YYYY-MM-DD format
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Update_a_contact"
+              example:
+                status: success
+                message: contact updated
+      x-codeSamples:
+        - lang: curl
+          source:
+            "curl -X PUT  \"https://api.mnotify.com/api/contact/4?key=YOUR_API_KEY\"\
+            \n-H \"Content-Type:application/json\" \n-d '{\"id\":\"4\", \"group_id\"\
+            :\"1\", \"phone\":\"0244698970\", \"title\":\"Dr\", \"firstname\":\"Stephen\"\
+            , \"lastname\":\"Strange\", \"email\": \"strange.smart@gmail.com\", \"dob\"\
+            : \"1979-01-01\"}'\n"
+        - lang: php
+          source:
+            "<?php\n   $endPoint = 'https://api.mnotify.com/api/contact';\n  \
+            \ $apiKey = 'YOUR_API_KEY';\n   $id = 4;\n   $url = $endPoint . '/' . $id\
+            \ . '?key=' . $apiKey;\n     $data = [\n       'id' => 4,\n       'group_id'\
+            \ => 1,\n       'phone' => '0244698970',\n       'title' => 'Dr',\n    \
+            \   'firstname' => 'Stephen',\n       'lastname' => 'Strange',\n       'email'\
+            \ => 'strange.smart@gmail.com',\n       'dob' => '1979-01-01'\n     ];\n\
+            \n   $ch = curl_init();\n   $headers = array();\n   $headers[] = \"Content-Type:\
+            \ application/json\";\n   curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);\n\
+            \   curl_setopt($ch, CURLOPT_URL, $url);\n   curl_setopt($ch, CURLOPT_RETURNTRANSFER,\
+            \ 1);\n   curl_setopt($ch, CURLOPT_CUSTOMREQUEST, \"PUT\");\n   curl_setopt($ch,\
+            \ CURLOPT_POSTFIELDS, $data);\n   $result = curl_exec($ch);\n   $result\
+            \ = json_decode($result, TRUE);\n   curl_close($ch);\n ?>\n"
+        - lang: python
+          source:
+            "import requests\n\nendPoint = 'https://api.mnotify.com/api/contact'\n\
+            apiKey = 'YOUR_API_KEY'\nid = 4\ndata = {\n  'id': 4,\n  'group_id': 1,\n\
+            \  'phone': '0244698970',\n  'title': 'Dr',\n  'firstname': 'Stephen',\n\
+            \  'lastname': 'Strange',\n  'email': 'strange.smart@gmail.com',\n  'dob':\
+            \ '1979-01-01',\n}\nurl = endPoint + '/' + id + '?key=' + apiKey\nresponse\
+            \ = requests.put(url, data)\ndata = response.json()\n"
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/contact'\n\
+            apiKey = 'YOUR_API_KEY'\nid = 3\n\nconst data = {\n  'id': 4,\n  'group_id':\
+            \ 1,\n  'phone': '0244698970',\n  'title': 'Dr',\n  'firstname': 'Stephen',\n\
+            \  'lastname': 'Strange',\n  'email': 'strange.smart@gmail.com',\n  'dob':\
+            \ '1979-01-01',\n}\nurl = endPoint + '/' + id + '?key=' + apiKey\nconst\
+            \ config = {\n        method: 'put',\n        path: url,\n        headers\
+            \ = {\n        'Accept': 'application/json'\n        },\n        data :\
+            \ data\n};\naxios(config)  \n.then(function (response)  {\nconsole.log(JSON.stringify(response.data));\
+            \  \n})  \n.catch(function (error)  {\nconsole.log(error);  \n})\n"
+  contact/<id>/<group_id>:
+    delete:
+      tags:
+        - Contact
+      summary: Delete a Contact
+      description:
+        "Delete a specific contact with id and group_id as parameters\n\
+        \n<strong>HTTP Request</strong>\n\n    DELETE https://api.mnotify.com/api/contact/<id>/<group_id>\n"
+      operationId: contact/delete
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of contact
+          required: true
+          schema:
+            type: int
+        - name: group_id
+          in: path
+          description: id of group which contact belong
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delete_a_contact"
+              example:
+                status: success
+                message: group and associated contacts deleted
+      x-codeSamples:
+        - lang: curl
+          source: curl -X DELETE "https://api.mnotify.com/api/contact/4/1?key=YOUR_API_KEY"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/contact';\n \
+            \   $apiKey = 'YOUR_API_KEY';\n    $id = 4;\n    $groupId = 1;\n    $url\
+            \ = $endPoint . '/' . $id . '/' . $groupId . '?key=' . $apiKey;\n\n    $ch\
+            \ = curl_init();\n    curl_setopt($ch, CURLOPT_URL, $url);\n    curl_setopt($ch,\
+            \ CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"DELETE\");\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/contact'
+
+            apiKey = 'YOUR_API_KEY'
+
+            id = 4
+
+            groupId = 1
+
+            url = endPoint + '/' + id + '/' + groupId + '?key=' + apiKey
+
+            response = requests.delete(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/group'\n\
+            apiKey = 'YOUR_API_KEY'\nid = 3\ngroupId = 4\n\nurl = endPoint + '/' + id\
+            \ + '/' + groupId '?key=' + apiKey\nconst config = {\n        method: 'delete',\n\
+            \        path: url,\n        headers = {\n        'Accept': 'application/json'\n\
+            \        },\n};\naxios(config)  \n.then(function (response)  {\nconsole.log(JSON.stringify(response.data));\
+            \  \n})  \n.catch(function (error)  {\nconsole.log(error);  \n})\n"
+  /sms/quick:
+    post:
+      tags:
+        - SMS
+      summary: Quick Bulk SMS
+      description: |
+        Send SMS to clients/contacts using contacts that you have without storing in any group first.  
+
+        <h3>HTTP Request</h3>
+
+        ```http
+        POST https://api.mnotify.com/api/sms/quick
+        ```
+
+        <p class="alert-primary"><i class="las la-info-circle" style="font-size:24px"></i> _id is the id of the message sent. You can store this id somewhere to check the delivery status of your message. This id is also called campaign id</p>
+
+        <br>
+
+        <h3>Schedule Quick Bulk SMS</h3>
+
+        When scheduling quick SMS, you must set <code>is_schedule</code> to <code>true</code> and include the date and time in <code>schedule_date</code> payload in the format <code>YYYY-MM-DD hh:mm</code>.
+
+        </p> <p class="alert-warning"> <i class="las la-exclamation-triangle" style="font-size:24px"></i> Do not include the <code>sms_otp</code> field in the payload unless the message blast is specifically for OTP purposes. Including it unnecessarily may cause validation errors or unintended behavior. </p>
+
+        <p class="alert-warning">
+        <i class="las la-exclamation-triangle" style="font-size:24px"></i>
+        When <code>sms_type: "otp"</code> is included in your payload, a charge of 
+        <strong>0.035 per campaign</strong> will be deducted from your main wallet.
+        </p>
+
+      operationId: campaign/sms_quick
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: recipient
+          in: path
+          description: Array of phone numbers eg. ['0241234567', '0201234567']
+          required: true
+          schema:
+            type: array
+        - name: sender
+          in: path
+          description: Sender ID of the message. Must be at most 11 characters
+          required: true
+          schema:
+            type: string
+        - name: message
+          in: path
+          description: Message content
+          required: true
+          schema:
+            type: text
+        - name: is_schedule
+          in: path
+          description: Schedule flag. True means schedule message
+          required: false
+          schema:
+            type: boolean
+        - name: schedule_date
+          in: path
+          description: date and time in YYYY-MM-DD hh:mm if is_schedule is true
+          required: false
+          schema:
+            type: datetime
+        - name: sms_type
+          in: path
+          description: type of the sms blast
+          required: false
+          schema:
+            type: string
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign_sms_quick"
+              example:
+                status: success
+                code: "2000"
+                message: messages sent successfully
+                summary:
+                  _id: A59CCB70-662D-45EF-9976-1EFAD249793D
+                  type: API QUICK SMS
+                  total_sent: 2
+                  contacts: 2
+                  total_rejected: 0
+                  numbers_sent:
+                    - "0241234567"
+                    - "0201234567"
+                  credit_used: 2
+                  credit_left: 1483
+      x-codeSamples:
+        - lang: curl
+          source: |
+            curl -X POST "https://api.mnotify.com/api/sms/quick?key=YOUR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "recipient": ["0241234567", "0201234567"],
+              "sender": "mNotify",
+              "message": "API messaging is fun!",
+              "is_schedule": false,
+              "schedule_date": "",
+            // uncomment the below line to send OTP sms 
+            //  When sms_type: "otp" is included in your payload, a charge of 0.035 per campaign will be deducted from your main wallet.
+            //  "sms_type": "otp" please do not include in payload when the purpose of the blast is not for otp
+            }'
+
+        - lang: php
+          source: |
+            <?php
+            $endPoint = 'https://api.mnotify.com/api/sms/quick';
+            $apiKey = 'YOUR_API_KEY';
+            $url = $endPoint . '?key=' . $apiKey;
+
+            $data = [
+              'recipient' => ['0241234567', '0201234567'],
+              'sender' => 'mNotify',
+              'message' => 'API messaging is fun!',
+              'is_schedule' => false,
+              'schedule_date' => '',
+            // uncomment the below line to send OTP sms
+            // When sms_type: "otp" is included in your payload, a charge of 0.035 per campaign will be deducted from your main wallet.
+            // 'sms_type': 'otp' please do not include in payload when the purpose of the blast is not for otp
+            ];
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            $result = curl_exec($ch);
+            $result = json_decode($result, TRUE);
+            curl_close($ch);
+            ?>
+
+        - lang: python
+          source: |
+            import requests
+
+            endPoint = 'https://api.mnotify.com/api/sms/quick'
+            apiKey = 'YOUR_API_KEY'
+            url = endPoint + '?key=' + apiKey
+
+            data = {
+              "recipient": ["0241234567", "0201234567"],
+              "sender": "mNotify",
+              "message": "API messaging is fun!",
+              "is_schedule": False,
+              "schedule_date": "",
+            # uncomment the below line to send OTP sms
+            # When sms_type: "otp" is included in your payload, a charge of 0.035 per campaign will be deducted from your main wallet.
+            # "sms_type": "otp" please do not include in payload when the purpose of the blast is not for otp
+            }
+
+            response = requests.post(url, json=data)
+            print(response.json())
+
+        - lang: nodejs
+          source: |
+            const axios = require('axios');
+
+            const endPoint = 'https://api.mnotify.com/api/sms/quick';
+            const apiKey = 'YOUR_API_KEY';
+            const url = endPoint + '?key=' + apiKey;
+
+            const data = {
+              recipient: ['0241234567', '0201234567'],
+              sender: 'mNotify',
+              message: 'API messaging is fun!',
+              is_schedule: false,
+              schedule_date: '',
+            // uncomment the below line to send OTP sms
+            // When sms_type: "otp" is included in your payload, a charge of 0.035 per campaign will be deducted from your main wallet.
+            //  sms_type: 'otp' please do not include in payload when the purpose of the blast is not for otp
+            };
+
+            axios.post(url, data, {
+              headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => {
+              console.log(response.data);
+            })
+            .catch(error => {
+              console.error(error);
+            });
+
+  /sms/group:
+    post:
+      tags:
+        - SMS
+      summary: Group Bulk SMS
+      description:
+        "Send SMS to clients/contacts using groups you created earlier\
+        \ which has contacts in them\n\n<strong>HTTP Request</strong>\n\n    POST\
+        \ https://api.mnotify.com/api/sms/group\n<p class=\"alert-primary\"><i class=\"\
+        las la-info-circle\" style=\"font-size:24px\"></i> In our example, we will\
+        \ use message template id because we have already used message content when\
+        \ dealing with quick SMS</p>\n<p class=\"alert-primary\"><i class=\"las la-info-circle\"\
+        \ style=\"font-size:24px\"></i> _id is the id of the message sent. You can\
+        \ store this id somewhere to check the delivery status of your message. This\
+        \ id is also called campaign id</p>\n<br>\n<h3>Schedule Group Bulk SMS</h3>\n\
+        When scheduling quick SMS, you must set is_schedule to true and include the\
+        \ date and time in schedule_date payload in the format YYYY-MM-DD hh:mm.\n"
+      operationId: campaign/sms_group
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: group_id
+          in: path
+          description: Array of group ids eg. ['1', '2']
+          required: true
+          schema:
+            type: array
+        - name: sender
+          in: path
+          description: Sender ID of the message. Must be at most 11 characters
+          required: true
+          schema:
+            type: string
+        - name: message
+          in: path
+          description: Message content
+          required: true
+          schema:
+            type: text
+        - name: message_id
+          in: path
+          description: Message template id
+          required: true
+          schema:
+            type: int
+        - name: is_schedule
+          in: path
+          description: Schedule flag. True means schedule message
+          required: false
+          schema:
+            type: boolean
+        - name: schedule_date
+          in: path
+          description: date and time in YYYY-MM-DD hh:mm if is_schedule is true
+          required: false
+          schema:
+            type: datetime
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign_sms_group"
+              example:
+                status: success
+                code: "2000"
+                message: messages sent successfully
+                summary:
+                  _id: 8C5D1052-9BD6-459A-96FF-5DC1516C05FD
+                  type: API GROUP SMS
+                  total_sent: 3
+                  contacts: 3
+                  total_rejected: 0
+                  numbers_sent:
+                    - "0201234567"
+                    - 0244698970
+                    - "0241234567"
+                  credit_used: 3
+                  credit_left: 1480
+      x-codeSamples:
+        - lang: curl
+          source:
+            "curl -X POST  \"https://api.mnotify.com/api/sms/group?key=YOUR_API_KEY\"\
+            \n-H \"Content-Type:application/json\" \n-d '{\"group_id\":[\"1\",\"2\"\
+            ], \"sender\":\"mNotify\", \"message_id\":\"17481\", \"is_schedule\":false,\
+            \ \"schedule_date\":\"\"}'\n"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/sms/group';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \    $data = [\n      'group_id' => ['1', '2'],\n      'sender' => 'mNotify',\n\
+            \      'message_id' => 17481,\n      'is_schedule' => 'false',\n      'schedule_date'\
+            \ => ''\n    ];\n\n    $ch = curl_init();\n    $headers = array();\n   \
+            \ $headers[] = \"Content-Type: application/json\";\n    curl_setopt($ch,\
+            \ CURLOPT_HTTPHEADER, $headers);\n    curl_setopt($ch, CURLOPT_URL, $url);\n\
+            \    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch,\
+            \ CURLOPT_CUSTOMREQUEST, \"POST\");\n    curl_setopt($ch, CURLOPT_POSTFIELDS,\
+            \ $data);\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source:
+            "import requests\n\nendPoint = 'https://api.mnotify.com/api/sms/group'\n\
+            apiKey = 'YOUR_API_KEY'\ndata = {\n  'group_id[]': ['1', '2'],\n  'sender':\
+            \ 'mNotify',\n  'message_id': '17481',\n  'is_schedule': False,\n  'schedule_date':\
+            \ ''\n}\nurl = endPoint + '?key=' + apiKey\nresponse = requests.post(url,\
+            \ data)\ndata = response.json()\n"
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/sms/group'\n\
+            apiKey = 'YOUR_API_KEY'\nconst data = {\n    'group_id: ['1', '2'],\n  \
+            \  'sender': 'mNotify'\n    'message_id': 17481\n    'is_schedule': 'false'\n\
+            \    'schedule_date': ''\n}\nurl = endPoint + '?key=' + apiKey\nconst config\
+            \ = {\n        method: 'post',\n        path: url,\n        headers = {\n\
+            \        'Accept': 'application/json'\n        },\n        data : data\n\
+            };\naxios(config)  \n.then(function (response)  {\nconsole.log(JSON.stringify(response.data));\
+            \  \n})  \n.catch(function (error)  {\nconsole.log(error);  \n})\n"
+  /scheduled:
+    get:
+      tags:
+        - SMS
+      summary: Scheduled SMS
+      description:
+        "Get all scheduled messages\n\n<strong>HTTP Request</strong>\n\n\
+        \    POST https://api.mnotify.com/api/scheduled\n<p class=\"alert-primary\"\
+        ><i class=\"las la-info-circle\" style=\"font-size:24px\"></i>You can store\
+        \ the id of the scheduled messages somewhere in case it needs to be updated</p>\n"
+      operationId: scheduled
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign_scheduled"
+              example:
+                status: success
+                code: "2000"
+                message: Data results found
+                summary:
+                  id: 10094
+                  message: Your message has been updated
+                  sender_id: mNotify
+                  date_time: "2023-10-25 13:30:00"
+      x-codeSamples:
+        - lang: curl
+          source:
+            'curl -X POST  "https://api.mnotify.com/api/scheduled?key=YOUR_API_KEY"
+
+            -H "Content-Type:application/json"
+
+            '
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/scheduled';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \n    $ch = curl_init();\n    $headers = array();\n    $headers[] = \"Content-Type:\
+            \ application/json\";\n    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);\n\
+            \    curl_setopt($ch, CURLOPT_URL, $url);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER,\
+            \ 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, \"GET\");\n    $result\
+            \ = curl_exec($ch);\n    $result = json_decode($result, TRUE);\n    curl_close($ch);\n\
+            ?>\n"
+        - lang: python
+          source:
+            "import requests\nimport json\n\nurl = \"https://api.mnotify.com/api/scheduled?key=YOUR_API_KEY\"\
+            \n\npayload={}\nheaders = {\n  'Content-Type': 'application/json'\n}\n\n\
+            response = requests.request(\"GET\", url, headers=headers, data=payload)\n\
+            \ndata = response.json()\n"
+        - lang: nodejs
+          source:
+            "var axios = require('axios');\n\nvar config = {\n  method: 'get',\n\
+            \  url: 'https://api.mnotify.com/api/scheduled?key=YOUR_API_KEY',\n  headers:\
+            \ { \n    'Content-Type': 'application/json'\n  }\n};\n\naxios(config)\n\
+            .then(function (response) {\n  console.log(JSON.stringify(response.data));\n\
+            })\n.catch(function (error) {\n  console.log(error);\n});\n"
+  /scheduled/<id>?key=YOUR_API_KEY:
+    post:
+      tags:
+        - SMS
+      summary: Update Scheduled SMS
+      description:
+        "Update scheduled SMS by passing id of scheduled SMS\n\n<strong>HTTP\
+        \ Request</strong>\n\n    POST https://api.mnotify.com/api/schedule/<id>?key=YOUR_API_KEY\n\
+        <p class=\"alert-primary\"><i class=\"las la-info-circle\" style=\"font-size:24px\"\
+        ></i>id of schedulded SMS can be obtained from Scheduled SMS endpoint which\
+        \ appears before this endpoint</p>\n<br>\n"
+      operationId: update/scheduled
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: sender
+          in: path
+          description: Sender ID for scheduled SMS
+          required: true
+          schema:
+            type: string
+        - name: message
+          in: path
+          description: Content of SMS
+          required: true
+          schema:
+            type: text
+        - name: scheduled_date
+          in: path
+          description: date and time in YYYY-MM-DD hh:mm
+          required: true
+          schema:
+            type: datetime
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign_updated_scheduled"
+              example:
+                status: success
+                code: "2000"
+                message: Updated successfully
+                summary:
+                  id: "10094"
+                  sender_id: mNotify
+                  message: You are the best
+                  schedule_date: "2023-12-30 17:56:00"
+      x-codeSamples:
+        - lang: curl
+          source:
+            "curl -X POST  \"https://api.mnotify.com/api/scheduled/<id>?key=YOUR_API_KEY\"\
+            \n-H \"Content-Type:application/json\" \n-d '{\"sender\":\"mNotify\", \"\
+            message\":\"You are the best\", \"schedule_date\":\"2023-10-30 17:56:00\"\
+            }'\n"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/scheduled/';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . $id . '?key=' . $apiKey;\n\
+            \    $data = [\n      'sender' => 'mNotify',\n      'message' => 'You are\
+            \ the best',\n      'schedule_date' => '2023-10-30 17:56:00'\n    ];\n\n\
+            \    $ch = curl_init();\n    $headers = array();\n    $headers[] = \"Content-Type:\
+            \ application/json\";\n    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);\n\
+            \    curl_setopt($ch, CURLOPT_URL, $url);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER,\
+            \ 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, \"POST\");\n    curl_setopt($ch,\
+            \ CURLOPT_POSTFIELDS, json_encode($data));\n    $result = curl_exec($ch);\n\
+            \    $result = json_decode($result, TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source:
+            "import requests\nimport json\n\nurl = \"https://api.mnotify.com/api/scheduled/id?key=YOUR_API_KEY\"\
+            \n\npayload = json.dumps({\n  \"sender\": \"mNotify\",\n  \"message\": \"\
+            You are the best\",\n  \"schedule_date\": \"2023-10-30 17:56:00\"\n})\n\
+            headers = {\n  'Content-Type': 'application/json'\n}\n\nresponse = requests.request(\"\
+            POST\", url, headers=headers, data=payload)\n\ndata = response.json()\n"
+        - lang: nodejs
+          source:
+            "var axios = require('axios');\nvar data = JSON.stringify({\n  \"\
+            sender\": \"mNotify\",\n  \"message\": \"You are the best\",\n  \"schedule_date\"\
+            : \"2023-10-30 17:56:00\"\n});\n\nvar config = {\n  method: 'post',\n  url:\
+            \ 'https://api.mnotify.com/api/scheduled/id?key=YOUR_API_KEY',\n  headers:\
+            \ { \n    'Content-Type': 'application/json'\n  },\n  data : data\n};\n\n\
+            axios(config)\n.then(function (response) {\n  console.log(JSON.stringify(response.data));\n\
+            })\n.catch(function (error) {\n  console.log(error);\n});\n"
+  /voice/quick:
+    post:
+      tags:
+        - Voice
+      summary: Quick Bulk Voice Call
+      description:
+        "The difference between Quick Bulk Voice Call and Quick Bulk SMS\
+        \ is the content of message. Here instead of using text as the message, you\
+        \ are going to use voice that you have recorded earlier in any format.\n\n\
+        <strong>HTTP Request</strong>\n\n    POST https://api.mnotify.com/api/voice/quick\n\
+        <p class=\"alert-danger\"><i class=\"las la-info-circle\" style=\"font-size:24px\"\
+        ></i>When you use voice file, do NOT use voice id and and also do NOT use\
+        \ voice file when you are using voice id</p>
+
+        <p class=\"alert-primary\"><i\
+        \ class=\"las la-info-circle\" style=\"font-size:24px\"></i>_id is the id\
+        \ of the voice call sent. You can store this id somewhere to check the delivery\
+        \ status of your message. This id is also called campaign id voice_id is the\
+        \ id of the voice file you just used. You don't need to upload the same voice\
+        \ file when you want to place bulk voice call again using that voice file.</p>\n\
+        <br>\n<h3>Schedule Quick Bulk Voice Call</h3>\nWhen scheduling quick bulk\
+        \ voice call, you must set is_schedule to true and include the date and time\
+        \ in schedule_date payload in the format YYYY-MM-DD hh:mm.When scheduling\
+        \ quick bulk voice call, you must set is_schedule to true and include the\
+        \ date and time in schedule_date payload in the format YYYY-MM-DD hh:mm.\n"
+      operationId: campaign/bulk_voice
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: campaign
+          in: path
+          description: The title of your bulk voice call campaign
+          required: true
+          schema:
+            type: string
+        - name: recipient
+          in: path
+          description: Array of phone numbers eg. ['0241234567', '0201234567']
+          required: true
+          schema:
+            type: array
+        - name: file
+          in: path
+          description: Your voice file in any format eg. mp3,wav etc
+          required: true
+          schema:
+            type: file
+        - name: voice_id
+          in: path
+          description: Your voice id when you already have a voice used before
+          required: true
+          schema:
+            type: string
+        - name: is_schedule
+          in: path
+          description: Schedule flag. True means schedule message
+          required: false
+          schema:
+            type: boolean
+        - name: schedule_date
+          in: path
+          description: date and time in YYYY-MM-DD hh:mm if is_schedule is true
+          required: false
+          schema:
+            type: datetime
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign_bulk_voice"
+              example:
+                status: success
+                code: "2000"
+                message: voice call sent successfully
+                summary:
+                  _id: XRSzcFO74eHGCj6TrdZjVut8qDsXVi
+                  voice_id: "20180308134708"
+                  type: QUICK BULK CALL
+                  total_sent: 2
+                  contacts: 2
+                  total_rejected: 0
+                  numbers_sent:
+                    - "0241234567"
+                    - "0201234567"
+                  credit_used: 18
+      x-codeSamples:
+        - lang: curl
+          source:
+            "curl https://api.mnotify.com/api/voice/quick?key=YOUR_API_KEY\n-F\
+            \ campaign=\"First Voice Campaign\" -F recipient[]=0241234567 -F recipient[]=0201234567\
+            \ \n-F file=@path/to/your/voice/file -F voice_id=\"\"  -F is_schedule=false\
+            \ -F schedule_date=\"\"\n"
+        - lang: php
+          source:
+            "<?php\n\n    $endPoint = 'https://api.mnotify.com/api/voice/quick';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \    $curlFile = curl_file_create('path/to/your/voice/file');\n    $data\
+            \ = [\n      'campaign' => 'First Voice Campaign',\n      'recipient' =>\
+            \ ['0241234567', '0201234567'],\n      'file' => $curlFile,\n      'voice_id'\
+            \ => '',\n      'is_schedule' => 'false',\n      'schedule_date' => ''\n\
+            \    ];\n\n    $ch = curl_init();\n    $headers = array();\n    $headers[]\
+            \ = \"Content-Type: multipart/form-data\";\n    curl_setopt($ch, CURLOPT_HTTPHEADER,\
+            \ $headers);\n    curl_setopt($ch, CURLOPT_URL, $url);\n    curl_setopt($ch,\
+            \ CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"POST\");\n    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);\n    $result\
+            \ = curl_exec($ch);\n    $result = json_decode($result, TRUE);\n    curl_close($ch);\n\
+            ?>\n"
+        - lang: python
+          source:
+            "import requests\n\nendPoint = 'https://api.mnotify.com/api/voice/quick'\n\
+            apiKey = 'YOUR_API_KEY'\nfile = {'file': open('path/to/your/voice/file',\
+            \ 'rb')}\ndata = {\n  'campaign': 'First Voice Campaign',\n  'recipient[]':\
+            \ ['0241234567', '0201234567'],\n  'file': file,\n  'voice_id': '',\n  'is_schedule':\
+            \ False,\n  'schedule_date': ''\n}\nurl = endPoint + '?key=' + apiKey\n\
+            response = requests.post(url, data)\ndata = response.json()\n"
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nconst FormData = require('form-data');\n\
+            const fs = require('fs');\nconst data = new FormData();\nconst data = new\
+            \ FormData();\ndata.append('campaign', '0241234567') \ndata.append('recipient[]',\
+            \ '0241234567') \ndata.append('recipient[]', '0201234567') \ndata.append('voice_file',\
+            \ fs.createReadStream('/C:/files/voice_file.mp3')) \ndata.append('is_schedule',\
+            \ 'false')\ndata.append('schedule_date', '')\nendPoint = 'https://api.mnotify.com/api/voice/quick'\n\
+            apiKey = 'YOUR_API_KEY'\nurl = endPoint + '?key=' + apiKey\nconst config\
+            \  = {\n        method: 'post',\n        path: url,\n        headers = {\n\
+            \        ...data.getHeaders(),\n        },\n        data : data\n};\naxios(config)\
+            \  \n.then(function (response)  {\nconsole.log(JSON.stringify(response.data));\
+            \  \n})  \n.catch(function (error)  {\nconsole.log(error);  \n})\n"
+  /voice/group:
+    post:
+      tags:
+        - Voice
+      summary: Group Bulk Voice Call
+      description:
+        "Send SMS to clients/contacts using groups you created earlier\
+        \ which has contacts in them\n\n<strong>HTTP Request</strong>\n\n    POST\
+        \ https://api.mnotify.com/api/voice/group\n<p class=\"alert-primary\"><i class=\"\
+        las la-info-circle\" style=\"font-size:24px\"></i>In our example, we will\
+        \ use voice id because we have already used voice file when dealing with quick\
+        \ bulk voice call</p>\n\n<br>\n<h3>Schedule Group Bulk Voice Call</h3>\nWhen\
+        \ scheduling quick SMS, you must set is_schedule to true and include the date\
+        \ and time in schedule_date payload in the format YYYY-MM-DD hh:mm.\n"
+      operationId: campaign/voice_group
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: campaign
+          in: path
+          description: The title of your bulk voice call campaign
+          required: true
+          schema:
+            type: string
+        - name: recipient
+          in: path
+          description: Array of phone numbers eg. ['0241234567', '0201234567']
+          required: true
+          schema:
+            type: array
+        - name: file
+          in: path
+          description: Your voice file in any format eg. mp3,wav etc
+          required: true
+          schema:
+            type: file
+        - name: voice_id
+          in: path
+          description: Your voice id when you already have a voice used before
+          required: true
+          schema:
+            type: string
+        - name: is_schedule
+          in: path
+          description: Schedule flag. True means schedule message
+          required: false
+          schema:
+            type: boolean
+        - name: schedule_date
+          in: path
+          description: date and time in YYYY-MM-DD hh:mm if is_schedule is true
+          required: false
+          schema:
+            type: datetime
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign_voice_group"
+              example:
+                status: success
+                code: "2000"
+                message: voice call sent successfully
+                summary:
+                  _id: pj85z9u5odXqozOZOFuJwU88SYVN7j
+                  voice_id: "20180308134708"
+                  type: GROUP BULK CALL
+                  total_sent: 2
+                  contacts: 2
+                  total_rejected: 0
+                  numbers_sent:
+                    - "0201234567"
+                    - "0241234567"
+                  credit_used: 18
+      x-codeSamples:
+        - lang: curl
+          source:
+            "curl -X POST  \"https://api.mnotify.com/api/voice/group?key=YOUR_API_KEY\"\
+            \n-H \"Content-Type:application/json\" \n-d '{\"campaign\":\"First Voice\
+            \ Campaign\", group_id\":[\"1\",\"2\"], \"file\":\"\", \"voice_id\":\"20180308134708\"\
+            , \"is_schedule\":false, \"schedule_date\":\"\"}'\n"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/voice/group';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \    $data = [\n      'campaign' => 'First Voice Campaign',\n      'group_id'\
+            \ => ['1', '2'],\n      'file' => '',\n      'voice_id' => '20180308134708',\n\
+            \      'is_schedule' => 'false',\n      'schedule_date' => ''\n    ];\n\n\
+            \    $ch = curl_init();\n    $headers = array();\n    $headers[] = \"Content-Type:\
+            \ application/json\";\n    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);\n\
+            \    curl_setopt($ch, CURLOPT_URL, $url);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER,\
+            \ 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, \"POST\");\n    curl_setopt($ch,\
+            \ CURLOPT_POSTFIELDS, $data);\n    $result = curl_exec($ch);\n    $result\
+            \ = json_decode($result, TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source:
+            "import requests\n\nendPoint = 'https://api.mnotify.com/api/voice/group'\n\
+            apiKey = 'YOUR_API_KEY'\ndata = {\n  'campaign': 'First Voice Campaign',\n\
+            \  'group_id[]': ['1', '2'],\n  'file': '',\n  'voice_id': '20180308134708',\n\
+            \  'is_schedule': False,\n  'schedule_date': ''\n}\nurl = endPoint + '?key='\
+            \ + apiKey\nresponse = requests.post(url, data)\ndata = response.json()\n"
+        - lang: nodejs
+          source:
+            "var axios = require('axios');\nvar data = '{\"campaign\":\"First\
+            \ Voice Campaign\", group_id\":[\"1\",\"2\"], \"file\":\"\", \"voice_id\"\
+            :\"20180308134708\", \"is_schedule\":false, \"schedule_date\":\"\"}';\n\n\
+            var config = {\n  method: 'post',\n  url: 'https://api.mnotify.com/api/voice/group?key=YOUR_API_KEY',\n\
+            \  headers: { \n    'Content-Type': 'application/json'\n  },\n  data : data\n\
+            };\n\naxios(config)\n.then(function (response) {\n  console.log(JSON.stringify(response.data));\n\
+            })\n.catch(function (error) {\n  console.log(error);\n});\n"
+  /senderid/register:
+    post:
+      tags:
+        - SMS
+      summary: Sender ID Registration
+      description:
+        "Register your sender ids to send messages\n\n<strong>HTTP Request</strong>\n\
+        \n    POST https://api.mnotify.com/api/senderid/register\n"
+      operationId: sender_id/get
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: sender_name
+          in: path
+          description: Sender ID to be registered. Must be at most 11 characters
+          required: true
+          schema:
+            type: string
+        - name: purpose
+          in: path
+          description: Reason for registering the sender id. eg For Sending SMS Newsletters
+          required: true
+          schema:
+            type: array
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sender_id-registration"
+              example:
+                status: success
+                code: "2000"
+                message: Sender ID Successfully Registered.
+                summary:
+                  sender_name: mNotify
+                  purpose: For Sending SMS Newsletters
+                  status: Pending
+      x-codeSamples:
+        - lang: curl
+          source:
+            "curl -X POST  \"https://api.mnotify.com/api/senderid/register?key=YOUR_API_KEY\"\
+            \n-H \"Content-Type:application/json\" \n-d '{\"sender_name\":\"mNotify\"\
+            , \"purpose\" : \"For Sending SMS Newsletters\"}'\n"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/senderid/register';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \    $data = [\n      'sender_name' => 'mNotify',\n      'purpose' => 'For\
+            \ Sending SMS Newsletters'\n\n    ];\n\n    $ch = curl_init();\n    $headers\
+            \ = array();\n    $headers[] = \"Content-Type: application/json\";\n   \
+            \ curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);\n    curl_setopt($ch,\
+            \ CURLOPT_URL, $url);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n\
+            \    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, \"POST\");\n    curl_setopt($ch,\
+            \ CURLOPT_POSTFIELDS, json_encode($data));\n    $result = curl_exec($ch);\n\
+            \    $result = json_decode($result, TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source:
+            "import requests\n\nendPoint = 'https://api.mnotify.com/api/senderid/register\n\
+            apiKey = 'YOUR_API_KEY'\ndata = {\n  'sender_name': 'mNotify',\n  'purpose':\
+            \ 'For Sending SMS Newsletters'\n\n}\nurl = endPoint + '?key=' + apiKey\n\
+            response = requests.post(url, data)\ndata = response.json()\n"
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nendPoint = 'https://api.mnotify.com/api/senderid/register'\n\
+            apiKey = 'YOUR_API_KEY'\nconst data = {\n    'sender_name': 'mNotify',\n\
+            \    'purpose': 'For Sending SMS Newsletters'\n}\nurl = endPoint + '?key='\
+            \ + apiKey\nconst config = {\n        method: 'post',\n        path: url,\n\
+            \        headers = {\n        'Accept': 'application/json'\n        },\n\
+            \        data : data\n};\naxios(config)  \n.then(function (response)  {\n\
+            console.log(JSON.stringify(response.data));  \n})  \n.catch(function (error)\
+            \  {\nconsole.log(error);  \n})\n"
+  /senderid/status:
+    post:
+      tags:
+        - SMS
+      summary: Check Sender ID Status
+      description:
+        "Check status of your sender ids\n\n<strong>HTTP Request</strong>\n\
+        \n    POST https://api.mnotify.com/api/senderid/status\n"
+      operationId: sender_id/status
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: sender_name
+          in: path
+          description: Registered Sender ID.
+          required: true
+          schema:
+            type: string
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sender_id"
+              example:
+                status: success
+                code: "2000"
+                summary:
+                  sender name: mNotify
+                  status: Approved
+      x-codeSamples:
+        - lang: curl
+          source:
+            'curl --location --request POST ''https://api.mnotify.com/api/senderid/status/?key=YOUR_API_KEY''
+            \
+
+            --header ''Content-Type: application/json'' \
+
+            --data-raw ''{"sender_name":"mNotify"}''
+
+            '
+        - lang: php
+          source:
+            "<?php\n    $curl = curl_init();\n\n    curl_setopt_array($curl, array(\n\
+            \      CURLOPT_URL => 'https://api.mnotify.com/api/senderid/status/?key=YOUR_API_KEY',\n\
+            \      CURLOPT_RETURNTRANSFER => true,\n      CURLOPT_ENCODING => '',\n\
+            \      CURLOPT_MAXREDIRS => 10,\n      CURLOPT_TIMEOUT => 0,\n      CURLOPT_FOLLOWLOCATION\
+            \ => true,\n      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,\n     \
+            \ CURLOPT_CUSTOMREQUEST => 'POST',\n      CURLOPT_POSTFIELDS =>'{\n    \
+            \    \"sender_name\":\"mNotify\"\n    }',\n      CURLOPT_HTTPHEADER => array(\n\
+            \        'Content-Type: application/json'\n      ),\n    ));\n\n    $response\
+            \ = curl_exec($curl);\n\n    curl_close($curl);\n    echo $response;\n?>\n"
+        - lang: python
+          source:
+            "import requests\n\nendPoint = 'https://api.mnotify.com/api/senderid/status\n\
+            apiKey = 'YOUR_API_KEY'\ndata = {\n  'sender_name': 'mNotify',\n\n}\nurl\
+            \ = endPoint + '?key=' + apiKey\nresponse = requests.post(url, data)\ndata\
+            \ = response.json()\n"
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\n  endPoint = 'https://api.mnotify.com/api/senderid/status'\n\
+            \  apiKey = 'YOUR_API_KEY'\n  const data = {\n      'sender_name': 'mNotify'\n\
+            \  }\n  url = endPoint + '?key=' + apiKey\n  const config = {\n        \
+            \  method: 'post',\n          path: url,\n          headers = {\n      \
+            \    'Accept': 'application/json'\n          },\n          data : data\n\
+            \  };\n  axios(config)  \n  .then(function (response)  {\n  console.log(JSON.stringify(response.data));\
+            \  \n  })  \n  .catch(function (error)  {\n  console.log(error);  \n  })\n"
+  /balance/sms:
+    get:
+      tags:
+        - Reports and Stats
+      summary: Check SMS Balance
+      description:
+        "This endpoint retrieves your SMS credit balance and bonus\n\n\
+        <strong>HTTP Request</strong>\n\n    GET https://api.mnotify.com/api/balance/sms\n"
+      operationId: balance/sms
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Balance_sms"
+              example:
+                status: success
+                balance: 1000
+                bonus: 471
+      x-codeSamples:
+        - lang: curl
+          source:
+            'curl -X GET  "https://api.mnotify.com/api/balance/sms?key=YOUR_API_KEY"
+
+            '
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/balance/sms';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \n    $ch = curl_init();\n    curl_setopt($ch, CURLOPT_URL, $url);\n   \
+            \ curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"GET\");\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/balance/sms'
+
+            apiKey = 'YOUR_API_KEY'
+
+            url = endPoint + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "var axios = require('axios');\n\nvar config = {\n  method: 'get',\n\
+            \  url: 'https://api.mnotify.com/api/balance/sms?key=YOUR_API_KEY',\n  headers:\
+            \ { }\n};\n\naxios(config)\n.then(function (response) {\n  console.log(JSON.stringify(response.data));\n\
+            })\n.catch(function (error) {\n  console.log(error);\n});\n"
+  /balance/voice:
+    get:
+      tags:
+        - Reports and Stats
+      summary: Check Voice Balance
+      description:
+        "This endpoint retrieves your Voice credit balance\n\n<strong>HTTP\
+        \ Request</strong>\n\n    GET https://api.mnotify.com/api/balance/voice\n"
+      operationId: balance/voice
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Balance_voice"
+              example:
+                status: success
+                balance: 59995
+      x-codeSamples:
+        - lang: curl
+          source:
+            'curl -X GET  "https://api.mnotify.com/api/balance/voice?key=YOUR_API_KEY"
+
+            '
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/balance/voice';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \n    $ch = curl_init();\n    curl_setopt($ch, CURLOPT_URL, $url);\n   \
+            \ curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"GET\");\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/balance/voice'
+
+            apiKey = 'YOUR_API_KEY'
+
+            url = endPoint + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "var axios = require('axios');\n\nvar config = {\n  method: 'get',\n\
+            \  url: 'https://api.mnotify.com/api/balance/voice?key=YOUR_API_KEY',\n\
+            \  headers: { }\n};\n\naxios(config)\n.then(function (response) {\n  console.log(JSON.stringify(response.data));\n\
+            })\n.catch(function (error) {\n  console.log(error);\n});\n"
+  /campaign/<id>/<status>:
+    get:
+      tags:
+        - Reports and Stats
+      summary: SMS Delivery Report
+      description:
+        "This endpoint retrieves delivery report for SMS sent earlier with\
+        \ id (campaign_id) of message returned when message was sent\n\n<strong>HTTP\
+        \ Request</strong>\n\n    GET https://api.mnotify.com/api/campaign/<id>/<status>\n\
+        <p class=\"alert-success\"><i class=\"las la-check-circle\" style=\"font-size:24px\"\
+        ></i>Recall that an _id is returned when a message is sent and it was established\
+        \ that it is used to check for delivery status</p>\n<p class=\"alert-primary\"\
+        ><i class=\"las la-info-circle\" style=\"font-size:24px\"></i>default for\
+        \ status is null which will return all delivery report, delivered which returns\
+        \ delivered report, undelivered returns undelivered report, submitted returns\
+        \ submitted report, failed returns failed report and rejected returns rejected\
+        \ report</p>\n"
+      operationId: campaign/status
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of campaign
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: path
+          description: status of delivery
+          required: false
+          schema:
+            type: string
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign_status"
+              example:
+                status: success
+                report:
+                  - _id: 60711577
+                    recipient: "233241234567"
+                    message: API messaging is fun!
+                    sender: mNotify
+                    status: DELIVERED
+                    date_sent: "2018-03-08 10:19:35"
+                    campaign_id: 7FE4A62A-96EB-4755-BC57-000A38C8C6EF
+                    retries: 0
+                  - _id: 60711578
+                    recipient: "233201234567"
+                    message: API messaging is fun!
+                    sender: mNotify
+                    status: DELIVERED
+                    date_sent: "2018-03-08 10:19:35"
+                    campaign_id: 7FE4A62A-96EB-4755-BC57-000A38C8C6EF
+                    retries: 0
+      x-codeSamples:
+        - lang: curl
+          source:
+            'curl -X GET "https://api.mnotify.com/api/campaign/7FE4A62A-96EB-4755-BC57-000A38C8C6EF?key=YOUR_API_KEY"
+
+            '
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/campaign/7FE4A62A-96EB-4755-BC57-000A38C8C6EF';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \n    $ch = curl_init();\n    curl_setopt($ch, CURLOPT_URL, $url);\n   \
+            \ curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"GET\");\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/campaign/7FE4A62A-96EB-4755-BC57-000A38C8C6EF'
+
+            apiKey = 'YOUR_API_KEY'
+
+            url = endPoint + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "var axios = require('axios');\n\nvar config = {\n  method: 'get',\n\
+            \  url: 'https://api.mnotify.com/api/campaign/7FE4A62A-96EB-4755-BC57-000A38C8C6EF?key=YOUR_API_KEY',\n\
+            \  headers: { }\n};\n\naxios(config)\n.then(function (response) {\n  console.log(JSON.stringify(response.data));\n\
+            })\n.catch(function (error) {\n  console.log(error);\n});\n"
+  /status/<id>:
+    get:
+      tags:
+        - Reports and Stats
+      summary: Specific SMS Delivery Report
+      description:
+        "This endpoint retrieves delivery report for a specific SMS sent\
+        \ with the id as parameter\n\n<strong>HTTP Request</strong>\n\n    GET https://api.mnotify.com/api/status/<id>\n\
+        <p class=\"alert-danger\"><i class=\"las la-info-circle\" style=\"font-size:24px\"\
+        ></i>id here is not the campaign id but rather the _id returned when you query\
+        \ for delivery report</p>\n"
+      operationId: status/id
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of message sent
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status_id"
+              example:
+                status: success
+                report:
+                  _id: 60711577
+                  recipient: "233241234567"
+                  message: API messaging is fun!
+                  sender: mNotify
+                  status: DELIVERED
+                  date_sent: "2018-03-08 10:19:35"
+                  campaign_id: 7FE4A62A-96EB-4755-BC57-000A38C8C6EF
+                  retries: 0
+      x-codeSamples:
+        - lang: curl
+          source:
+            'curl -X GET "https://api.mnotify.com/api/status/60711577?key=YOUR_API_KEY"
+
+            '
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/status/60711577';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \n    $ch = curl_init();\n    curl_setopt($ch, CURLOPT_URL, $url);\n   \
+            \ curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"GET\");\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/status/60711577'
+
+            apiKey = 'YOUR_API_KEY'
+
+            url = endPoint + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "var axios = require('axios');\n\nvar config = {\n  method: 'get',\n\
+            \  url: 'https://api.mnotify.com/api/status/60711577?key=YOUR_API_KEY',\n\
+            \  headers: { }\n};\n\naxios(config)\n.then(function (response) {\n  console.log(JSON.stringify(response.data));\n\
+            })\n.catch(function (error) {\n  console.log(error);\n});\n"
+  /report:
+    get:
+      tags:
+        - Reports and Stats
+      summary: Periodic Delivery Report
+      description:
+        "This endpoint retrieves delivery report in between specified dates\n\
+        \n<strong>HTTP Request</strong>\n\n    GET https://api.mnotify.com/api/report\n"
+      operationId: report
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: from
+          in: path
+          description: date from in YYYY-MM-DD format
+          required: true
+          schema:
+            type: date
+        - name: to
+          in: path
+          description: date to in YYYY-MM-DD format
+          required: true
+          schema:
+            type: date
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+              example:
+                status: success
+                report:
+                  - _id: 60711577
+                    recipient: "233241234567"
+                    message: API messaging is fun!
+                    sender: mNotify
+                    status: DELIVERED
+                    date_sent: "2018-03-08 10:19:35"
+                    campaign_id: 7FE4A62A-96EB-4755-BC57-000A38C8C6EF
+                    retries: 0
+                  - _id: 60711578
+                    recipient: "233201234567"
+                    message: API messaging is fun!
+                    sender: mNotify
+                    status: DELIVERED
+                    date_sent: "2018-03-08 10:19:35"
+                    campaign_id: 7FE4A62A-96EB-4755-BC57-000A38C8C6EF
+                    retries: 0
+                  - _id: 60720487
+                    recipient: "233241234567"
+                    message: API messaging is fun!
+                    sender: mNotify
+                    status: DELIVERED
+                    date_sent: "2018-03-08 10:37:31"
+                    campaign_id: 6C00C80E-C169-4F1F-A4DC-2407C1E729D3
+                    retries: 0
+                  - _id: 60720488
+                    recipient: "233201234567"
+                    message: API messaging is fun!
+                    sender: mNotify
+                    status: DELIVERED
+                    date_sent: "2018-03-08 10:37:31"
+                    campaign_id: 6C00C80E-C169-4F1F-A4DC-2407C1E729D3
+                    retries: 0
+                total_contacts: 9
+                total_charge: "9"
+      x-codeSamples:
+        - lang: curl
+          source:
+            'curl -X GET "https://api.mnotify.com/api/report?key=YOUR_API_KEY&from=2018-03-08&to=2018-03-08"
+
+            '
+        - lang: PHP
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/report?key=YOUR_API_KEY&from=2018-03-08&to=2018-03-08';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \n    $ch = curl_init();\n    curl_setopt($ch, CURLOPT_URL, $url);\n   \
+            \ curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"GET\");\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/report?key=YOUR_API_KEY&from=2018-03-08&to=2018-03-08'
+
+            apiKey = 'YOUR_API_KEY'
+
+            url = endPoint + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "var axios = require('axios');\n\nvar config = {\n  method: 'get',\n\
+            \  url: 'https://api.mnotify.com/api/report?key=YOUR_API_KEY&from=2018-03-08&to=2018-03-08',\n\
+            \  headers: { }\n};\n\naxios(config)\n.then(function (response) {\n  console.log(JSON.stringify(response.data));\n\
+            })\n.catch(function (error) {\n  console.log(error);\n});\n"
+  calls/<id>/<status>:
+    get:
+      tags:
+        - Reports and Stats
+      summary: Voice Call Report
+      description:
+        "This endpoint retrieves delivery report for voice calls sent earlier\
+        \ with id (campaign_id) of call returned when call was made\n\n<strong>HTTP\
+        \ Request</strong>\n\n    GET https://api.mnotify.com/api/calls/<id>/<status>\n\
+        <p class=\"alert-success\"><i class=\"las la-check-circle\" style=\"font-size:24px\"\
+        ></i>Recall that an _id is returned when a call is sent and it was established\
+        \ that it is used to check for delivery status</p>\n<p class=\"alert-primary\"\
+        ><i class=\"las la-info-circle\" style=\"font-size:24px\"></i>default for\
+        \ status is null which will return all delivery report, pending which returns\
+        \ pending calls, received returns received calls and missed returns missed\
+        \ calls</p>\n"
+      operationId: calls/status
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of campaign
+          required: true
+          schema:
+            type: int
+        - name: status
+          in: path
+          description: status of delivery
+          required: false
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Calls_status"
+              example:
+                status: success
+                report:
+                  - _id: "185447"
+                    recipient: "233241234567"
+                    campaign: First Voice Campaign
+                    answer_time: "0000-00-00 00:00:00"
+                    hang_up_time: "0000-00-00 00:00:00"
+                    campaign_id: XRSzcFO74eHGCj6TrdZjVut8qDsXVi
+                    status: pending
+                    retries: "0"
+                    date_sent: "2018-03-08 13:47:08"
+                    total_duration: "0"
+                  - _id: "185448"
+                    recipient: "233201234567"
+                    campaign: First Voice Campaign
+                    answer_time: "0000-00-00 00:00:00"
+                    hang_up_time: "0000-00-00 00:00:00"
+                    campaign_id: XRSzcFO74eHGCj6TrdZjVut8qDsXVi
+                    status: pending
+                    retries: "0"
+                    date_sent: "2018-03-08 13:47:09"
+                    total_duration: "0"
+      x-codeSamples:
+        - lang: curl
+          source:
+            'curl -X GET "https://api.mnotify.com/api/calls/XRSzcFO74eHGCj6TrdZjVut8qDsXVi?key=YOUR_API_KEY"
+
+            '
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/calls/XRSzcFO74eHGCj6TrdZjVut8qDsXVi';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \n    $ch = curl_init();\n    curl_setopt($ch, CURLOPT_URL, $url);\n   \
+            \ curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"GET\");\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/calls/XRSzcFO74eHGCj6TrdZjVut8qDsXVi'
+
+            apiKey = 'YOUR_API_KEY'
+
+            url = endPoint + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "var axios = require('axios');\n\nvar config = {\n  method: 'get',\n\
+            \  url: 'https://api.mnotify.com/api/calls/XRSzcFO74eHGCj6TrdZjVut8qDsXVi?key=YOUR_API_KEY',\n\
+            \  headers: { }\n};\n\naxios(config)\n.then(function (response) {\n  console.log(JSON.stringify(response.data));\n\
+            })\n.catch(function (error) {\n  console.log(error);\n});\n"
+  call-status/<id>:
+    get:
+      tags:
+        - Reports and Stats
+      summary: Specific Voice Call Report
+      description:
+        "This endpoint retrieves call report for a specific voice call\
+        \ sent with the id as parameter\n\n<strong>HTTP Request</strong>\n\n    GET\
+        \ https://api.mnotify.com/api/call-status/<id>\n<p class=\"alert-danger\"\
+        ><i class=\"las la-info-circle\" style=\"font-size:24px\"></i>id here is not\
+        \ the campaign id but rather the _id returned when you query for voice call\
+        \ report</p>\n"
+      operationId: calls-status
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of call sent
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Call_status"
+              example:
+                status: success
+                call:
+                  _id: "185447"
+                  recipient: "233241234567"
+                  campaign: First Voice Campaign
+                  answer_time: "0000-00-00 00:00:00"
+                  hang_up_time: "0000-00-00 00:00:00"
+                  campaign_id: XRSzcFO74eHGCj6TrdZjVut8qDsXVi
+                  status: pending
+                  retries: "0"
+                  date_sent: "2018-03-08 13:47:08"
+                  total_duration: "0"
+      x-codeSamples:
+        - lang: curl
+          source:
+            'curl -X GET "https://api.mnotify.com/api/call-status/185447?key=YOUR_API_KEY"
+
+            '
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/call-status/185447';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \n    $ch = curl_init();\n    curl_setopt($ch, CURLOPT_URL, $url);\n   \
+            \ curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"GET\");\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/call-status/185447'
+
+            apiKey = 'YOUR_API_KEY'
+
+            url = endPoint + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "var axios = require('axios');\n\nvar config = {\n  method: 'get',\n\
+            \  url: 'https://api.mnotify.com/api/call-status/185447?key=YOUR_API_KEY',\n\
+            \  headers: { }\n};\n\naxios(config)\n.then(function (response) {\n  console.log(JSON.stringify(response.data));\n\
+            })\n.catch(function (error) {\n  console.log(error);\n});\n"
+  /call-period:
+    get:
+      tags:
+        - Reports and Stats
+      summary: Periodic Voice Call Report
+      description:
+        "This endpoint retrieves voice call report in between specified\
+        \ dates\n\n<strong>HTTP Request</strong>\n\n    GET https://api.mnotify.com/api/call-period\n"
+      operationId: report/call/period
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: from
+          in: path
+          description: date from in YYYY-MM-DD format
+          required: true
+          schema:
+            type: date
+        - name: to
+          in: path
+          description: date to in YYYY-MM-DD format
+          required: true
+          schema:
+            type: date
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+              example:
+                status: success
+                call:
+                  - _id: "185449"
+                    recipient: "233201234567"
+                    campaign: First Voice Campaign
+                    answer_time: "0000-00-00 00:00:00"
+                    hang_up_time: "0000-00-00 00:00:00"
+                    campaign_id: pj85z9u5odXqozOZOFuJwU88SYVN7j
+                    status: pending
+                    retries: "0"
+                    date_sent: "2018-03-08 14:25:40"
+                    total_duration: "0"
+                  - _id: "185448"
+                    recipient: "233201234567"
+                    campaign: First Voice Campaign
+                    answer_time: "0000-00-00 00:00:00"
+                    hang_up_time: "0000-00-00 00:00:00"
+                    campaign_id: XRSzcFO74eHGCj6TrdZjVut8qDsXVi
+                    status: pending
+                    retries: "0"
+                    date_sent: "2018-03-08 13:47:09"
+                    total_duration: "0"
+                  - _id: "185450"
+                    recipient: "233241234567"
+                    campaign: First Voice Campaign
+                    answer_time: "0000-00-00 00:00:00"
+                    hang_up_time: "0000-00-00 00:00:00"
+                    campaign_id: pj85z9u5odXqozOZOFuJwU88SYVN7j
+                    status: pending
+                    retries: "0"
+                    date_sent: "2018-03-08 14:25:41"
+                    total_duration: "0"
+                  - _id: "185447"
+                    recipient: "233241234567"
+                    campaign: First Voice Campaign
+                    answer_time: "0000-00-00 00:00:00"
+                    hang_up_time: "0000-00-00 00:00:00"
+                    campaign_id: XRSzcFO74eHGCj6TrdZjVut8qDsXVi
+                    status: pending
+                    retries: "0"
+                    date_sent: "2018-03-08 13:47:08"
+                    total_duration: "0"
+      x-codeSamples:
+        - lang: curl
+          source:
+            'curl -X GET "https://api.mnotify.com/api/call-period?key=YOUR_API_KEY&from=2018-03-08&to=2018-03-08"
+
+            '
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/call-period?key=YOUR_API_KEY&from=2018-03-08&to=2018-03-08';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \n    $ch = curl_init();\n    curl_setopt($ch, CURLOPT_URL, $url);\n   \
+            \ curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch, CURLOPT_CUSTOMREQUEST,\
+            \ \"GET\");\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source: "import requests
+
+
+            endPoint = 'https://api.mnotify.com/api/call-period?key=YOUR_API_KEY&from=2018-03-08&to=2018-03-08'
+
+            apiKey = 'YOUR_API_KEY'
+
+            url = endPoint + '?key=' + apiKey
+
+            response = requests.get(url)
+
+            data = response.json()
+
+            "
+        - lang: nodejs
+          source:
+            "var axios = require('axios');\n\nvar config = {\n  method: 'get',\n\
+            \  url: 'https://api.mnotify.com/api/call-period?key=YOUR_API_KEY&from=2018-03-08&to=2018-03-08',\n\
+            \  headers: { }\n};\n\naxios(config)\n.then(function (response) {\n  console.log(JSON.stringify(response.data));\n\
+            })\n.catch(function (error) {\n  console.log(error);\n});\n"
+
+            # ivr starting point 
+  /initiate-ivr-call:
+    post:
+      tags:
+        - IVR (Inbound)
+      summary: Initiate IVR Call
+      description:
+        "This endpoint initiates an IVR call to a destination number.\n\
+        \n<strong>HTTP Request</strong>\n\n    POST https://api.mnotify.com/api/initiate-ivr-call?key=YOUR_API_KEY\"\
+        \n\n<p class=\"alert-primary\"><i class=\"las la-info-circle\" style=\"font-size:24px\"\
+        ></i>This endpoint starts an Interactive Voice Response (IVR) session with\
+        \ the specified destination number.</p>\n"
+      operationId: initiate-ivr-call
+      parameters:
+        - name: key
+          in: query
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fromNumber:
+                  type: string
+                  description: Caller number initiating the call
+                  example: "233501234567"
+                toNumber:
+                  type: string
+                  description: Destination number to dial
+                  example: "233541234567"
+                uuid:
+                  type: string
+                  description: Unique identifier for the call session
+                  example: abc123
+                uniqueId:
+                  type: string
+                  description: Another unique ID for tracking purposes
+                  example: xyz789
+              required:
+                - fromNumber
+                - toNumber
+                - uuid
+                - uniqueId
+      security:
+        - api_key:
+            - your_api_key
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Initiate_IVR_Call"
+              example:
+                status: success
+                message: IVR call initiated successfully
+                callId: call_12345
+      x-codeSamples:
+        - lang: curl
+          source:
+            "curl -X POST \"https://api.mnotify.com/api/initiate-ivr-call?key=YOUR_API_KEY\"\
+            \n-H \"Content-Type: application/json\"\n-d '{\n  \"fromNumber\": \"233501234567\"\
+            ,\n  \"toNumber\": \"233541234567\",\n  \"uuid\": \"abc123\",\n  \"uniqueId\"\
+            : \"xyz789\"\n}'\n"
+        - lang: php
+          source:
+            "<?php\n    $endPoint = 'https://api.mnotify.com/api/initiate-ivr-call';\n\
+            \    $apiKey = 'YOUR_API_KEY';\n    $url = $endPoint . '?key=' . $apiKey;\n\
+            \    $data = [\n        'fromNumber' => '233501234567',\n        'toNumber'\
+            \ => '233541234567',\n        'uuid' => 'abc123',\n        'uniqueId' =>\
+            \ 'xyz789'\n    ];\n\n    $ch = curl_init();\n    $headers = array();\n\
+            \    $headers[] = \"Content-Type: application/json\";\n    curl_setopt($ch,\
+            \ CURLOPT_HTTPHEADER, $headers);\n    curl_setopt($ch, CURLOPT_URL, $url);\n\
+            \    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);\n    curl_setopt($ch,\
+            \ CURLOPT_CUSTOMREQUEST, \"POST\");\n    curl_setopt($ch, CURLOPT_POSTFIELDS,\
+            \ json_encode($data));\n    $result = curl_exec($ch);\n    $result = json_decode($result,\
+            \ TRUE);\n    curl_close($ch);\n?>\n"
+        - lang: python
+          source:
+            "import requests\nimport json\n\nendPoint = 'https://api.mnotify.com/api/initiate-ivr-call'\n\
+            apiKey = 'YOUR_API_KEY'\ndata = {\n    'fromNumber': '233501234567',\n \
+            \   'toNumber': '233541234567',\n    'uuid': 'abc123',\n    'uniqueId':\
+            \ 'xyz789'\n}\nurl = endPoint + '?key=' + apiKey\nheaders = {'Content-Type':\
+            \ 'application/json'}\nresponse = requests.post(url, data=json.dumps(data),\
+            \ headers=headers)\ndata = response.json()\n"
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\nconst endPoint = 'https://api.mnotify.com/api/initiate-ivr-call';\n\
+            const apiKey = 'YOUR_API_KEY';\nconst data = {\n    'fromNumber': '233501234567',\n\
+            \    'toNumber': '233541234567',\n    'uuid': 'abc123',\n    'uniqueId':\
+            \ 'xyz789'\n};\nconst url = endPoint + '?key=' + apiKey;\nconst config =\
+            \ {\n    method: 'post',\n    url: url,\n    headers: {\n        'Content-Type':\
+            \ 'application/json'\n    },\n    data: data\n};\naxios(config)\n.then(function\
+            \ (response) {\n    console.log(JSON.stringify(response.data));\n})\n.catch(function\
+            \ (error) {\n    console.log(error);\n});\n"
+  /callback-url:
+    get:
+      tags:
+        - IVR (Inbound)
+      summary: IVR Response From Client
+      description:
+        "This endpoint receives IVR responses from the client system during\
+        \ an active IVR session.\n\n<strong>HTTP Request</strong>\n\n    GET https://your-server.com/callback-url\n\
+        \n<p class=\"alert-primary\"><i class=\"las la-info-circle\" style=\"font-size:24px\"\
+        ></i>This is a webhook endpoint that receives IVR interaction data. The parameters\
+        \ are sent as query parameters in the GET request.</p>\n\n<strong>Expected\
+        \ Response Format:</strong>\nYour server should respond with a JSON object\
+        \ containing an \"actions\" object where each key represents an action to\
+        \ be executed.\n\n<strong>Available Actions:</strong>\n- <strong>playback</strong>:\
+        \ \U0001F3B5 Plays an audio file to the caller\n- <strong>get_digits</strong>:\
+        \ \U0001F522 Plays audio and captures DTMF input\n- <strong>background</strong>:\
+        \ \U0001F50A Plays background audio and collects single digit\n- <strong>dial</strong>:\
+        \ \u260E Plays audio then dials a number or agent\n- <strong>hangup</strong>:\
+        \ \U0001F51A Immediately ends the call\n- <strong>record</strong>: \U0001F534\
+        \ Records audio input from caller\n"
+      operationId: callhttps://your-server.com/callback-url
+      parameters:
+        - name: CallerId
+          in: query
+          description: The phone number or identifier of the caller
+          required: false
+          schema:
+            type: string
+          example: 0541509393
+        - name: Extension
+          in: query
+          description: The extension or phone number dialed by the caller
+          required: false
+          schema:
+            type: string
+          example: 0541509394
+        - name: SequenceID
+          in: query
+          description: A unique identifier representing the IVR interaction sequence
+          required: false
+          schema:
+            type: integer
+          example: 483930111
+        - name: IsStarting
+          in: query
+          description: Indicates if this is beginning of the IVR session
+          required: false
+          schema:
+            type: boolean
+          example: true
+        - name: DTMF
+          in: query
+          description: The DTMF tone pressed by the user
+          required: false
+          schema:
+            type: integer
+          example: 4
+        - name: Timestamp
+          in: query
+          description: Date and time of the request
+          required: false
+          schema:
+            type: string
+          example: "201809810"
+        - name: action
+          in: query
+          description: Action that was executed
+          required: false
+          schema:
+            type: string
+          example: playback
+        - name: context
+          in: query
+          description: Used to determine whether call being made is inbound or outbound
+          required: false
+          schema:
+            type: string
+          example: incoming
+        - name: recordingUrl
+          in: query
+          description: URL of recorded audio
+          required: false
+          schema:
+            type: string
+          example: https://example.com/recording_1423432.wav
+      responses:
+        "200":
+          description: Success - Return IVR Actions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IVR_Response_Actions"
+              examples:
+                playback_example:
+                  summary: Playback Action
+                  value:
+                    playback:
+                      url: https://example.com/welcome.wav
+                get_digits_example:
+                  summary: Get Digits Action
+                  value:
+                    get_digits:
+                      url: https://example.com/enter_pin.wav
+                      num_digits: 4
+                      timeout: 10000
+                      finish_on_key: "#"
+                      skip_audio: false
+                background_example:
+                  summary: Background Action
+                  value:
+                    background:
+                      url: https://example.com/options.wav
+                      timeout: 15000
+                dial_example:
+                  summary: Dial Action
+                  value:
+                    dial:
+                      url: https://example.com/please_hold.wav
+                hangup_example:
+                  summary: Hangup Action
+                  value:
+                    hangup: {}
+                record_example:
+                  summary: Record Action
+                  value:
+                    record:
+                      url: https://example.com/leave_message.wav
+                      max_duration: 60
+                      finish_on_key: "#"
+                      play_beep: true
+      x-codeSamples:
+        - lang: curl
+          source:
+            "# GET https://your-server.com/callback-url?CallerId=0541509393&Extension=0541509394&SequenceID=483930111&IsStarting=true&DTMF=4&Timestamp=201809810&action=playback&context=incoming\n\
+            \n# Your server should respond with JSON like this:\ncurl -X GET \"https://your-server.com/callback-url\"\
+            \ \\\n-H \"Content-Type: application/json\" \\\n-d '{\n    \"CallerId\"\
+            : \"233200000000\",\n    \"Extension\": \"233500000000\",\n    \"SequenceID\"\
+            : \"483930111\",\n    \"IsStarting\": true,\n    \"DTMF\": \"4\",\n    \"\
+            Timestamp\": \"201809810\",\n    \"action\": \"playback\",\n    \"context\"\
+            : \"incoming\",\n    \"recordingUrl\": \"https://example.com/recording_1423432.wav\"\
+            ,\n  }'\n"
+        - lang: php
+          source:
+            "<?php\n  $url = \"https://your-server.com/callback-url\";\n\n  $params\
+            \ = array(\n      \"CallerId\"   => \"0541509393\",\n      \"Extension\"\
+            \   => \"0541509394\",\n      \"SequenceID\"   => \"483930111\",\n     \
+            \ \"IsStarting\"   => \"true\",\n      \"DTMF\"   => \"4\",\n      \"Timestamp\"\
+            \   => \"201809810\",\n      \"action\"   => \"playback\",\n      \"context\"\
+            \   => \"incoming\",\n      \"recordingUrl\" => \"https://example.com/recording_1423432.wav\"\
+            ,\n  );\n\n  $url .= '?' . http_build_query($params);\n\n  $ch = curl_init();\n\
+            \  curl_setopt($ch, CURLOPT_URL, $url);\n  curl_setopt($ch, CURLOPT_RETURNTRANSFER,\
+            \ true);\n  $result = curl_exec($ch);\n\n  if (curl_errno($ch)) {\n    \
+            \  echo 'Error:' . curl_error($ch);\n  }\n  curl_close($ch);\n\n  $response\
+            \ = json_decode($result, true);\n  print_r($response);\n?>\n"
+        - lang: python
+          source:
+            "import requests\n\nurl = \"https://your-server.com/callback-url\"\
+            \n\nparams = {\n    \"CallerId\": \"0541509393\",\n    \"Extension\": \"\
+            0541509394\",\n    \"SequenceID\": \"483930111\",\n    \"IsStarting\": \"\
+            true\",\n    \"DTMF\": \"4\",\n    \"Timestamp\": \"201809810\",\n    \"\
+            action\": \"playback\",\n    \"context\": \"incoming\",\n    \"recordingUrl\"\
+            : \"https://example.com/recording_1423432.wav\",\n}\n\nresponse = requests.get(url,\
+            \ params=params)\n\nprint(response.status_code)\nprint(response.json())\n"
+        - lang: nodejs
+          source:
+            "const axios = require('axios');\n\nconst url = \"https://your-server.com/callback-url\"\
+            ;\n\nconst params = {\n    CallerId: \"0541509393\",\n    Extension: \"\
+            0541509394\",\n    SequenceID: \"483930111\",\n    IsStarting: \"true\"\
+            ,\n    DTMF: \"4\",\n    Timestamp: \"201809810\",\n    action: \"playback\"\
+            ,\n    context: \"incoming\",\n    recordingUrl: \"https://example.com/recording_1423432.wav\"\
+            ,\n};\n\naxios.get(url, { params })\n    .then(response => {\n        console.log(response.data);\n\
+            \    })\n    .catch(error => {\n        console.error(error);\n    }); \
+            \            \n"
+  /your-server.com/your-callback-url:
+    post:
+      tags:
+        - USSD
+      summary: Shared USSD
+      description: |
+        mNotify’s USSD service can be integrated in two modes:
+
+        <p class="alert-primary"><i class="las la-info-circle" style="font-size:24px"></i>
+        With the shared USSD service, applications can be hosted on a common short code without the extra cost and time of acquiring a dedicated one. It's quick to setup, affordable, and efficient to launch USSD-based solutions.</p>
+
+        <h3>HTTP Request</h3>
+
+        ```http
+          POST https://your-server.com/callback-url
+
+        ```
+
+        <p>This explains how mNotify sends USSD session responses from USSD users to your provided callback URL (<code>your-callback-url</code>).</p>
+
+        <h3>Expected Response Format</h3>
+
+        Your application should respond with a JSON object containing:
+
+        - **msisdn** 📞 Phone number provided in the request  
+        - **sequenceID** 🆔 Sequence ID provided in the request  
+        - **message** 💬 Response message for the user’s handset. Use <code>\r\n</code> for line breaks.  
+        - **timestamp** 📅 Date and time of the response  
+        - **continueFlag** 🔃 Whether the session continues (`0`) or ends (`1`).
+
+      operationId: ussd/shared
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - msisdn
+                - sequenceID
+                - data
+                - timestamp
+              properties:
+                msisdn:
+                  type: string
+                  description: End user's phone number
+                sequenceID:
+                  type: string
+                  description: A unique identifier that distinguishes each USSD transaction
+                data:
+                  type: string
+                  description: The request body submitted by the user
+                timestamp:
+                  type: string
+                  description: Date and time of the request
+            example:
+              msisdn: "233541509394"
+              sequenceID: "6789940010"
+              data: "*899*86#"
+              timestamp: "2025-09-01T11:22:33Z"
+      responses:
+        "200":
+          description: Success - Return USSD response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - msisdn
+                  - sequenceID
+                  - message
+                  - timestamp
+                  - continueFlag
+                properties:
+                  msisdn:
+                    type: string
+                  sequenceID:
+                    type: string
+                  message:
+                    type: string
+                  timestamp:
+                    type: string
+                  continueFlag:
+                    type: integer
+                    enum: [0, 1]
+              example:
+                msisdn: "233541509394"
+                sequenceID: "20180801110921"
+                message: "WHAT YOU WANT USERS TO READ."
+                timestamp: "6789940010"
+                continueFlag: 0
+      x-codeSamples:
+        - lang: curl
+          source: |
+            curl -X POST "https://your-server.com/callback-url" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "msisdn":"233541509394",
+              "sequenceID":"6789940010",
+              "data":"*899*86#",
+              "timestamp":"2025-09-01T11:22:33Z"
+            }'
+        - lang: php
+          source: |
+            <?php
+            $url = "https://your-server.com/callback-url";
+            $data = [
+              "msisdn" => "233541509394",
+              "sequenceID" => "6789940010",
+              "data" => "*899*86#",
+              "timestamp" => "2025-09-01T11:22:33Z"
+            ];
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            $response = curl_exec($ch);
+            curl_close($ch);
+            ?>
+        - lang: python
+          source: |
+            import requests
+
+            url = "https://your-server.com/callback-url"
+            data = {
+              "msisdn": "233541509394",
+              "sequenceID": "6789940010",
+              "data": "*899*86#",
+              "timestamp": "2025-09-01T11:22:33Z"
+            }
+
+            response = requests.post(url, json=data)
+            print(response.json())
+        - lang: nodejs
+          source: |
+            const axios = require('axios');
+
+            const url = "https://your-server.com/callback-url";
+            const data = {
+              msisdn: "233541509394",
+              sequenceID: "6789940010",
+              data: "*899*86#",
+              timestamp: "2025-09-01T11:22:33Z"
+            };
+
+            axios.post(url, data)
+              .then(res => console.log(res.data))
+              .catch(err => console.error(err));
+
+# outbount ivr starting point
+  /voice/ivr/scenarios?key=YOUR_API_KEY:
+    get:
+      tags:
+        - Voice IVR Scenarios (Outbound)
+      summary: Get all Voice IVR Scenarios 
+      description: |
+        This method enables you to look up all Voice IVR Scenarios.
+
+            GET https://api.mnotify.com/api/ivr-scenarios
+        
+      operationId: template
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+      security:
+        - api_key: ["your_api_key"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Get_template"
+              example:
+                status: success
+                message: "IVR Scenarios fetched successfully"
+                data: [
+                    {
+                      "id": 1,
+                      "title": "HandWash Campaign",
+                      "description": "Just trying to test the ivr flow",
+                      "status": true,
+                      "created_at": "2025-02-05",
+                      "updated_at": "2025-02-05",
+                      "ivr_flows": [
+                        {
+                          "id": 1,
+                          "flow_name": "Sales Menu",
+                          "route": "/sales_menu",
+                          "audio": "https://api.mnotify.com/voice/sounds/ivr/sales_menu.mp3",
+                          "file_name": "sales_menu.mp3_a9ivr",
+                          "ivr_scenarios_id": 1,
+                          "created_at": "2025-02-05",
+                          "updated_at": "2025-02-05",
+                          "dtmf_options": [
+                            {
+                                "id": 1,
+                                "digit": 1,
+                                "route": "english",
+                                "ivr_scenario_flows_id": 1,
+                                "ivr_scenarios_id": 1,
+                                "created_at": "2025-02-05T04:08:50.000000Z",
+                                "updated_at": "2025-02-05T04:08:50.000000Z"
+                            }
+                          ],
+                          "action_options": [
+                             {
+                                "id": 1,
+                                "name": "get_digits",
+                                "attributes": "[{\"callBackUrl\":\"https:\\/\\/webhook.site\\/54a0932e-2dd0-4235-b267-988d092182eb\"},{\"numDigits\":\"10\"},{\"timeout\":15},{\"finishOnKey\":\"#\"}]",
+                                "ivr_scenario_flows_id": 3,
+                                "ivr_scenarios_id": 1,
+                                "created_at": "2025-02-05T04:11:08.000000Z",
+                                "updated_at": "2025-02-05T04:11:08.000000Z"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+      x-codeSamples:
+        - lang: curl
+          source: curl -X GET "https://api.mnotify.com/api/ivr-scenarios?key=YOUR_API_KEY"
+
+        - lang: php
+          source: |
+            <?php
+                $endPoint = 'https://api.mnotify.com/api/ivr-scenarios';
+                $apiKey = 'YOUR_API_KEY';
+                $url = $endPoint . '?key=' . $apiKey;
+
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+                $result = curl_exec($ch);
+                $result = json_decode($result, TRUE);
+                curl_close($ch);
+            ?>
+
+        - lang: python
+          source: |
+            import requests
+            endPoint = 'https://api.mnotify.com/api/ivr-scenarios'
+            apiKey = 'YOUR_API_KEY'
+            url = endPoint + '?key=' + apiKey
+            response = requests.get(url)
+            data = response.json();
+
+        - lang: nodejs
+          source: |
+            const axios = require('axios');
+            endPoint = 'https://api.mnotify.com/api/ivr-scenarios'
+            apiKey = 'YOUR_API_KEY'
+            url = endPoint + '?key=' + apiKey
+            const config = {method : 'get', path: url}
+            axios(config)  
+            .then(function (response)  {
+            console.log(JSON.stringify(response.data));  
+            })  
+            .catch(function (error)  {
+            console.log(error);  
+            })
+
+  "/voice/ivr/scenario/<id>":
+    get:
+      tags:
+        - Voice IVR Scenarios (Outbound)
+      summary: Get a Specific Voice IVR Scenario
+      description: |
+        Retrieve a specific voice ivr scenario with id as a parameter.
+
+        <strong>HTTP Request</strong>
+
+            GET https://api.mnotify.com/api/ivr-scenario/<id>
+      operationId: template/id
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of specified voice ivr scenario
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key: ["your_api_key"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Get_specific_template"
+              example:
+                status: success
+                scenario_list:
+                  {
+                      "id": 1,
+                      "title": "HandWash Campaign",
+                      "description": "Just trying to test the ivr flow",
+                      "status": true,
+                      "created_at": "2025-02-05",
+                      "updated_at": "2025-02-05",
+                      "ivr_flows": [
+                        {
+                          "id": 1,
+                          "flow_name": "Sales Menu",
+                          "route": "/sales_menu",
+                          "audio": "https://api.mnotify.com/voice/sounds/ivr/sales_menu.mp3",
+                          "file_name": "sales_menu.mp3_a9ivr",
+                          "ivr_scenarios_id": 1,
+                          "created_at": "2025-02-05",
+                          "updated_at": "2025-02-05",
+                          "dtmf_options": [
+                            {
+                                "id": 1,
+                                "digit": 1,
+                                "route": "english",
+                                "ivr_scenario_flows_id": 1,
+                                "ivr_scenarios_id": 1,
+                                "created_at": "2025-02-05T04:08:50.000000Z",
+                                "updated_at": "2025-02-05T04:08:50.000000Z"
+                            }
+                          ],
+                          "action_options": [
+                             {
+                                "id": 1,
+                                "name": "get_digits",
+                                "attributes": "[{\"callBackUrl\":\"https:\\/\\/webhook.site\\/54a0932e-2dd0-4235-b267-988d092182eb\"},{\"numDigits\":\"10\"},{\"timeout\":15},{\"finishOnKey\":\"#\"}]",
+                                "ivr_scenario_flows_id": 3,
+                                "ivr_scenarios_id": 1,
+                                "created_at": "2025-02-05T04:11:08.000000Z",
+                                "updated_at": "2025-02-05T04:11:08.000000Z"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+      # requestBody:
+      #   content:
+      #     application/json:
+      #       schema:
+      #         type: string
+      #         example: curl -X GET "https://api.mnotify.com/api/template/1?key=YOUR_API_KEY"
+      #     application/xml:
+      #       schema:
+      #         type: string
+      #         example: Hello world!
+      #   description: Echo payloadsss
+      #   required: true
+      x-codeSamples:
+        - lang: curl
+          source: curl -X GET "https://api.mnotify.com/api/ivr-scenario/1?key=YOUR_API_KEY"
+
+        - lang: php
+          source: |
+            <?php
+                $endPoint = 'https://api.mnotify.com/api/ivr-scenario';
+                $apiKey = 'YOUR_API_KEY';
+                $id = 1;
+                $url = $endPoint . '/' . $id . '?key=' . $apiKey;
+
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+                $result = curl_exec($ch);
+                $result = json_decode($result, TRUE);
+                curl_close($ch);
+            ?>
+
+        - lang: python
+          source: |
+            import requests
+
+            endPoint = 'https://api.mnotify.com/api/ivr-scenario'
+            apiKey = 'YOUR_API_KEY'
+            id = 1
+            url = endPoint + '/' + id + '?key=' + apiKey
+            response = requests.get(url)
+            data = response.json()
+
+        - lang: nodejs
+          source: |
+            const axios = require('axios');
+            endPoint = 'https://api.mnotify.com/api/ivr-scenario'
+            apiKey = 'YOUR_API_KEY'
+            id =  = '1'
+            url = endPoint + '/' + id + '?key=' + apiKey
+            const config = {method : 'get', path: url}
+            axios(config)  
+            .then(function (response)  {
+            console.log(JSON.stringify(response.data));  
+            })  
+            .catch(function (error)  {
+            console.log(error);  
+            })
+
+  "/voice/ivr/scenario":
+    post:
+      tags:
+        - Voice IVR Scenarios (Outbound)
+      summary: Add Voice IVR Scenario
+      description: |
+        Add a voice ivr scenario with data..
+
+        <strong>HTTP Request</strong>
+
+            POST https://api.mnotify.com/api/ivr-scenario
+         
+      operationId: template/add
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: title
+          in: path
+          description: Title of voice ivr scenario
+          required: true
+          schema:
+            type: string
+        - name: description
+          in: path
+          description: Content of the voice ivr scenario
+          required: false
+          schema:
+            type: text
+        - name: status
+          in: path
+          description: true => enabled & false => disabled. By default, scenarios are enabled if not specified
+          required: false
+          schema:
+            type: boolean
+      security:
+        - api_key: ["your_api_key"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Add_template"
+              example:
+                status: success
+                id: 3
+                title: "Hand Wash Campaign"
+                description: "Educating remote areas on handwash"
+      x-codeSamples:
+        - lang: curl
+          source: |
+            curl -X POST "https://api.mnotify.com/api/ivr-scenario?key=YOUR_API_KEY"
+            -H "Content-Type:application/json"
+            -d '{"title":"Hand Wash Campaign","description":"Educating remote areas on handwash"}'
+
+        - lang: php
+          source: |
+            <?php
+                $endPoint = 'https://api.mnotify.com/api/ivr-scenario';
+                $apiKey = 'YOUR_API_KEY';
+                $url = $endPoint . '?key=' . $apiKey;
+                $data = [
+                  'title' => 'Hand Wash Campaign',
+                  'description' => 'Educating remote areas on handwash' 
+                ];
+
+                $ch = curl_init();
+                $headers = array();
+                $headers[] = "Content-Type: application/json";
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+                $result = curl_exec($ch);
+                $result = json_decode($result, TRUE);
+                curl_close($ch);
+            ?>
+
+        - lang: python
+          source: |
+            import requests
+            endPoint = 'https://api.mnotify.com/api/ivr-scenario'
+            apiKey = 'YOUR_API_KEY'
+            data = {
+              'title': 'Hand Wash Campaign',
+              'description': 'Educating remote areas on handwash'
+            }
+            url = endPoint + '?key=' + apiKey
+            response = requests.post(url, data)
+            data = response.json()
+
+        - lang: nodejs
+          source: |
+            const axios = require('axios');
+            endPoint = 'https://api.mnotify.com/api/ivr-scenario'
+            apiKey = 'YOUR_API_KEY'
+            const data = {
+                'title': 'Hand Wash Campaign',
+                'description': 'Educating remote areas on handwash'
+            }
+            url = endPoint + '?key=' + apiKey
+            const config = {
+                    method: 'post',
+                    path: url,
+                    headers = {
+                    'Accept': 'application/json'
+                    },
+                    data : data
+            };
+            axios(config)  
+            .then(function (response)  {
+            console.log(JSON.stringify(response.data));  
+            })  
+            .catch(function (error)  {
+            console.log(error);  
+            })
+
+  "/voice/ivr/scenario/<id> ":
+    put:
+      tags:
+        - Voice IVR Scenarios (Outbound)
+      summary: Update voice ivr scenarios
+      description: |
+        This endpoint updates a specific voice ivr scenario
+
+        <strong>HTTP Request</strong>
+
+            PUT https://api.mnotify.com/api/ivr-scenario/<id>
+
+      operationId: template/update
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: title
+          in: path
+          description: Title of voice ivr scenario
+          required: true
+          schema:
+            type: string
+        - name: description
+          in: path
+          description: Content of voice ivr scenario
+          required: false
+          schema:
+            type: text
+        - name: status
+          in: path
+          description: true => enabled & false => disabled. By default, scenarios are enabled if not specified
+          required: true
+          schema:
+            type: boolean
+        - name: id
+          in: path
+          description: id of voice ivr scenario to update
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key: ["your_api_key"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Update_template"
+              example:
+                status: success
+                message: "IVR Scenario updated successfully"
+      x-codeSamples:
+        - lang: curl
+          source: |
+            curl -X PUT  "https://api.mnotify.com/api/ivr-scenario/3?key=YOUR_API_KEY"
+            -H "Content-Type:application/json" 
+            -d '{"title":"IVR testing","description":"Best message"}'
+
+        - lang: php
+          source: |
+            <?php
+                $endPoint = 'https://api.mnotify.com/api/ivr-scenario';
+                $apiKey = 'YOUR_API_KEY';
+                $id = 3;
+                $url = $endPoint . '/' . $id . '?key=' . $apiKey;
+                $data = [
+                    'title' => 'IVR testing',
+                    'description' => 'Best message' ,
+                    'id' => 3
+                ];
+
+                $ch = curl_init();
+                $headers = array();
+                $headers[] = "Content-Type: application/json";
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+                $result = curl_exec($ch);
+                $result = json_decode($result, TRUE);
+                curl_close($ch);
+            ?>
+
+        - lang: python
+          source: |
+            import requests
+
+            endPoint = 'https://api.mnotify.com/api/ivr-scenario'
+            apiKey = 'YOUR_API_KEY'
+            id = 3
+            data = {
+              'title': 'IVR testing',
+              'description': 'Best message',
+              'id': 3
+            }
+            url = endPoint + '/' + id + '?key=' + apiKey
+            response = requests.put(url, data)
+            data = response.json()
+
+        - lang: nodejs
+          source: |
+            const axios = require('axios');
+            endPoint = 'https://api.mnotify.com/api/ivr-scenario'
+            apiKey = 'YOUR_API_KEY'
+            id = 3
+
+            const data = {
+                'title': 'IVR testing',
+                'description': 'Best message'
+                'id': '3'
+            }
+            url = endPoint + '/' + id + '?key=' + apiKey
+            const config = {
+                    method: 'put',
+                    path: url,
+                    headers = {
+                    'Accept': 'application/json'
+                    },
+                    data : data
+            };
+            axios(config)  
+            .then(function (response)  {
+            console.log(JSON.stringify(response.data));  
+            })  
+            .catch(function (error)  {
+            console.log(error);  
+            })
+
+  "/voice/ivr/scenario/<id>  ":
+    delete:
+      tags:
+        - Voice IVR Scenarios (Outbound)
+      summary: Delete voice ivr scenario
+      description: |
+        This endpoint deletes a voice ivr scenario
+
+        <strong>HTTP Request</strong>
+
+            DELETE https://api.mnotify.com/api/ivr-scenario/<id>
+      operationId: template/delete
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of voice ivr scenario to delete
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key: ["your_api_key"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delete_template"
+              example:
+                status: success
+                message: voice ivr scenario deleted
+      x-codeSamples:
+        - lang: curl
+          source: curl -X DELETE "https://api.mnotify.com/api/ivr-scenario/3?key=YOUR_API_KEY"
+
+        - lang: php
+          source: |
+            <?php
+                $endPoint = 'https://api.mnotify.com/api/ivr-scenario';
+                $apiKey = 'YOUR_API_KEY';
+                $id = 3;
+                $url = $endPoint . '/' . $id . '?key=' . $apiKey;
+
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+                $result = curl_exec($ch);
+                $result = json_decode($result, TRUE);
+                curl_close($ch);
+            ?>
+
+        - lang: python
+          source: |
+            import requests
+
+            endPoint = 'https://api.mnotify.com/api/ivr-scenario'
+            apiKey = 'YOUR_API_KEY'
+            id = 3
+            url = endPoint + '/' + id + '?key=' + apiKey
+            response = requests.delete(url)
+            data = response.json()
+
+        - lang: nodejs
+          source: |
+            const axios = require('axios');
+            endPoint = 'https://api.mnotify.com/api/ivr-scenario'
+            apiKey = 'YOUR_API_KEY'
+            id = 3
+
+            url = endPoint + '/' + id + '?key=' + apiKey
+            const config = {
+                    method: 'delete',
+                    path: url,
+                    headers = {
+                    'Accept': 'application/json'
+                    },
+            };
+            axios(config)  
+            .then(function (response)  {
+            console.log(JSON.stringify(response.data));  
+            })  
+            .catch(function (error)  {
+            console.log(error);  
+            })
+
+  "/voice/ivr/scenario/launch":
+    post:
+      tags:
+        - Voice IVR Scenarios (Outbound)
+      summary: Send Voice IVR Scenario
+      description: |
+        Send a voice ivr scenario to recipients
+
+        <strong>HTTP Request</strong>
+
+            POST https://api.mnotify.com/api/ivr-scenario/launch
+         
+      operationId: template/launch
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of voice ivr scenario for the blast
+          required: true
+          schema:
+            type: int
+        - name: recipients
+          in: path
+          description: Array of phone numbers eg. ['0249706365', '0203698970']
+          required: true
+          schema:
+            type: Array
+
+      security:
+        - api_key: ["your_api_key"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Add_template"
+              example:
+                status: success
+                id: 3
+                message: message sent successfully
+                summary: 
+                      {
+                          "_id": "A59CCB70-662D-45EF-9976-1EFAD249793D",
+                          "total_contacts": 2,
+                          "credit_used": 105
+                      }
+      x-codeSamples:
+        - lang: curl
+          source: |
+            curl -X POST "https://api.mnotify.com/api/ivr-scenario/send?key=YOUR_API_KEY"
+            -H "Content-Type:application/json"
+            -d '{"id":"3","recipients":"['020*******','024*******']"}'
+
+        - lang: php
+          source: |
+            <?php
+                $endPoint = 'https://api.mnotify.com/api/ivr-scenario/send';
+                $apiKey = 'YOUR_API_KEY';
+                $url = $endPoint . '?key=' . $apiKey;
+                $data = [
+                  'id' => 3,
+                  'recipients' => ['020*******','024*******'] 
+                ];
+
+                $ch = curl_init();
+                $headers = array();
+                $headers[] = "Content-Type: application/json";
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+                $result = curl_exec($ch);
+                $result = json_decode($result, TRUE);
+                curl_close($ch);
+            ?>
+
+        - lang: python
+          source: |
+            import requests
+            endPoint = 'https://api.mnotify.com/api/ivr-scenario/send'
+            apiKey = 'YOUR_API_KEY'
+            data = {
+              'id': 3,
+              'recipients': ['020*******','024*******']
+            }
+            url = endPoint + '?key=' + apiKey
+            response = requests.post(url, data)
+            data = response.json()
+
+        - lang: nodejs
+          source: |
+            const axios = require('axios');
+            endPoint = 'https://api.mnotify.com/api/ivr-scenario/send'
+            apiKey = 'YOUR_API_KEY'
+            const data = {
+                'id': 3,
+                'content': ['020*******','024*******']
+            }
+            url = endPoint + '?key=' + apiKey
+            const config = {
+                    method: 'post',
+                    path: url,
+                    headers = {
+                    'Accept': 'application/json'
+                    },
+                    data : data
+            };
+            axios(config)  
+            .then(function (response)  {
+            console.log(JSON.stringify(response.data));  
+            })  
+            .catch(function (error)  {
+            console.log(error);  
+            })
+  #End ivr - Message Template#
+
+  # get scenarios for ivr startig point
+  /ivr-scenarios/flow/<flow-id>:
+    get:
+      tags:
+        - Scenarios Child Flow (Outbound)
+      summary: Get Scenariow Flow 
+      description: |
+        This endpoint returns a flow configured to a scenario
+
+        <strong>HTTP Request</strong>
+
+            GET https://api.mnotify.com/api/ivr-scenarios/flow/<flow-id>
+      operationId: flow/get/
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of the flow
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key: ["your_api_key"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delete_template"
+              example:
+                status: success
+                data: 
+                     {
+                          "id": 1,
+                          "flow_name": "Sales Menu",
+                          "route": "/sales_menu",
+                          "audio": "https://api.mnotify.com/voice/sounds/ivr/sales_menu.mp3",
+                          "file_name": "sales_menu.mp3_a9ivr",
+                          "ivr_scenarios_id": 1,
+                          "created_at": "2025-02-05",
+                          "updated_at": "2025-02-05",
+                          "dtmf_options": [
+                            {
+                                "id": 1,
+                                "digit": 1,
+                                "route": "english",
+                                "ivr_scenario_flows_id": 1,
+                                "ivr_scenarios_id": 1,
+                                "created_at": "2025-02-05T04:08:50.000000Z",
+                                "updated_at": "2025-02-05T04:08:50.000000Z"
+                            }
+                          ],
+                          "action_options": [
+                             {
+                                "id": 1,
+                                "name": "get_digits",
+                                "attributes": "[{\"callBackUrl\":\"https:\\/\\/webhook.site\\/54a0932e-2dd0-4235-b267-988d092182eb\"},{\"numDigits\":\"10\"},{\"timeout\":15},{\"finishOnKey\":\"#\"}]",
+                                "ivr_scenario_flows_id": 3,
+                                "ivr_scenarios_id": 1,
+                                "created_at": "2025-02-05T04:11:08.000000Z",
+                                "updated_at": "2025-02-05T04:11:08.000000Z"
+                            }
+                          ]
+                        }
+      x-codeSamples:
+        - lang: curl
+          source: curl -X GET "https://api.mnotify.com/api/ivr-scenarios/flow/3?key=YOUR_API_KEY"
+
+        - lang: php
+          source: |
+            <?php
+                $endPoint = 'https://api.mnotify.com/api/ivr-scenarios/flow';
+                $apiKey = 'YOUR_API_KEY';
+                $id = 3;
+                $url = $endPoint . '/' . $id . '?key=' . $apiKey;
+
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+                $result = curl_exec($ch);
+                $result = json_decode($result, TRUE);
+                curl_close($ch);
+            ?>
+
+        - lang: python
+          source: |
+            import requests
+
+            endPoint = 'https://api.mnotify.com/api/ivr-scenarios/flow'
+            apiKey = 'YOUR_API_KEY'
+            id = 3
+            url = endPoint + '/' + id + '?key=' + apiKey
+            response = requests.get(url)
+            data = response.json()
+
+        - lang: nodejs
+          source: |
+            const axios = require('axios');
+            endPoint = 'https://api.mnotify.com/api/ivr-scenarios/flow'
+            apiKey = 'YOUR_API_KEY'
+            id = 3
+
+            url = endPoint + '/' + id + '?key=' + apiKey
+            const config = {
+                    method: 'get',
+                    path: url,
+                    headers = {
+                    'Accept': 'application/json'
+                    },
+            };
+            axios(config)  
+            .then(function (response)  {
+            console.log(JSON.stringify(response.data));  
+            })  
+            .catch(function (error)  {
+            console.log(error);  
+            })
+
+
+
+  "/ivr-scenarios/flow":
+    post:
+      tags:
+        - Scenarios Child Flow (Outbound)
+      summary: Add Flow To Scenario
+      description: |
+        This endpoint adds a flow to a scenario
+
+        <strong>HTTP Request</strong>
+
+            POST https://api.mnotify.com/api/ivr-scenarios/flow
+        <p class="alert-danger"><i class="las la-info-circle" style="font-size:24px"></i> route parameter defines the IVR flow. Name the starting flow as start. Intermediate flows can have any custom route name.</p>
+  
+      operationId: flow/post/
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: flow_name
+          in: path
+          description: name of the flow
+          required: true
+          schema:
+            type: string
+        - name: route
+          in: path
+          description: route name for the flow
+          required: true
+          schema:
+            type: string
+        - name: audio
+          in: path
+          description:  file path to the sound file
+          required: true
+          schema:
+            type: string
+
+        - name: dtmf
+          in: path
+          description:  Mapping of DTMF inputs to routes
+          required: true
+          schema:
+            type: object
+            properties:
+              options:
+                type: array
+                description: List of DTMF mappings.
+                items:
+                  type: object
+                  properties:
+                    digit:
+                      type: integer
+                      description: The DTMF digit pressed.
+                    route:
+                      type: string
+                      description: The route associated with the digit.
+                    
+              # retry_limit:
+              #   type: integer
+              #   description: Number of retry attempts allowed for invalid inputs.
+              # timeout:
+              #   type: integer
+              #   description: Timeout in seconds for DTMF input.
+              # retry_audio:
+              #   type: string
+              #   description: File path to the audio played for invalid DTMF inputs.
+
+
+      security:
+        - api_key: ["your_api_key"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delete_template"
+              example:
+                status: success
+                message: "IVR Scenario Flow saved successfully."
+
+    "/ivr-scenarios/flow/<flow_id>":
+    put:
+      tags:
+        - Scenarios Child Flow (Outbound)
+      summary: Update Scenario Flow
+      description: |
+        This endpoint update a flow to a scenario
+
+        <strong>HTTP Request</strong>
+
+            PUT https://api.mnotify.com/api/ivr-scenarios/flow/<flow_id>
+      operationId: flow/put/
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of the flow
+          required: true
+          schema:
+            type: int
+        - name: flow_name
+          in: path
+          description: name of the flow
+          required: true
+          schema:
+            type: string
+        - name: route
+          in: path
+          description: route name for the flow
+          required: true
+          schema:
+            type: string
+        - name: audio
+          in: path
+          description:  file path to the sound file
+          required: true
+          schema:
+            type: string
+
+        - name: dtmf
+          in: path
+          description:  Mapping of DTMF inputs to routes
+          required: true
+          schema:
+            type: object
+            properties:
+              options:
+                type: array
+                description: List of DTMF mappings.
+                items:
+                  type: object
+                  properties:
+                    digit:
+                      type: integer
+                      description: The DTMF digit pressed.
+                    route:
+                      type: string
+                      description: The route associated with the digit.
+
+
+      security:
+        - api_key: ["your_api_key"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delete_template"
+              example:
+                status: success
+                message: IVR Scenario Flow updated successfully  
+
+
+    "/ivr-scenarios/flow/<id>":
+    delete:
+      tags:
+        - Scenarios Child Flow (Outbound)
+      summary: Delete Scenario Flow
+      description: |
+        This endpoint deletes a flow to a scenario
+
+        <strong>HTTP Request</strong>
+
+            DELETE https://api.mnotify.com/api/ivr-scenario/flow/<flow_id>
+      operationId: template/delete
+      parameters:
+        - name: key
+          in: path
+          description: Your enabled api key
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id of the flow to delete
+          required: true
+          schema:
+            type: int
+      security:
+        - api_key: ["your_api_key"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delete_template"
+              example:
+                status: success
+                message: flow deleted successfully
+  #End Child Flow
+
+
+  /your-server.com/your-callback:
+    post:
+      tags:
+        - USSD
+      summary: Dedicated USSD
+      description: |
+        <h3>Dedicated USSD</h3>
+
+        When users dial your dedicated shortcode (e.g., *123#), they interact directly with your USSD app.  
+
+        Dedicated USSD provides **full control of the menu, user flow, and branding** since the shortcode is not shared.  
+
+        <p class="alert-primary"><i class="las la-info-circle" style="font-size:24px"></i>
+        mNotify’s Dedicated USSD API allows developers to build custom menus and process user inputs in real-time using HTTP/S requests.</p>
+
+        <h3>HTTP Request</h3>
+
+        ```http
+        POST https://your-server.com/callback-url
+
+        ```
+        <h3>Expected Response Format</h3>
+
+        Respond with a JSON object including:
+
+        - **responseExitCode** ✅ HTTP response status code (200 = success)  
+        - **shouldClose** 🔚 Whether the session ends (`true`) or continues (`false`)  
+        - **ussdMenu** 📋 The text menu for the user (use \r\n for line breaks)  
+        - **responseMessage** ℹ️ Optional info or error message
+
+      operationId: ussd/dedicated
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - shortCode
+                - msIsdn
+                - text
+                - sessId
+                - ussdGwId
+              properties:
+                shortCode:
+                  type: string
+                  description: The dedicated shortcode assigned
+                msIsdn:
+                  type: string
+                  description: End user's phone number
+                text:
+                  type: string
+                  description: User input during session
+                sessId:
+                  type: string
+                  description: Unique USSD session ID
+                ussdGwId:
+                  type: string
+                  description: Operator handling the session (MTN, Vodafone, AirtelTigo)
+                language:
+                  type: string
+                  description: Optional session language
+                imsi:
+                  type: string
+                  description: IMSI of the SIM card (if available)
+                optional:
+                  type: string
+                  description: Extra parameters from operator
+            example:
+              shortCode: "*123#"
+              msIsdn: "233541509394"
+              text: "1"
+              sessId: "ABC123456"
+              ussdGwId: "MTN"
+              language: "en"
+      responses:
+        "200":
+          description: Success - Return USSD response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  responseExitCode:
+                    type: integer
+                  shouldClose:
+                    type: boolean
+                  ussdMenu:
+                    type: string
+                  responseMessage:
+                    type: string
+              example:
+                responseExitCode: 200
+                shouldClose: false
+                ussdMenu: "1. Balance\r\n2. Buy Data\r\n0. Exit"
+                responseMessage: "Menu delivered successfully"
+
+components:
+  securitySchemes:
+    main_auth:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: http://example.com/api/oauth/dialog
+          scopes:
+            read:users: read users info
+            write:users: modify or remove users
+    api_key:
+      type: apiKey
+      in: header
+      name: api_key
+    basic_auth:
+      type: http
+      scheme: basic
+  schemas:
+    Get_template:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        template_list:
+          description: Contains array  of a templates
+    Get_specific_template:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        template_list:
+          description: Contains specific template
+    Add_template:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        _id:
+          description: Contains array of templates
+          type: string
+    Update_template:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+    Delete_template:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+    Get_group:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        group_list:
+          description: Contains an array of groups
+    Get_specific_group:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        group:
+          description: Contains specific group
+    Add_group:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        _id:
+          type: string
+          description: id of group
+    Update_group:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        message:
+          type: string
+          description: ""
+    Delete_group:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        message:
+          type: string
+          description: ""
+    Get_contact:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        contact_list:
+          description: Contains an array  of contacts
+    Get_group_contact:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        contact:
+          description: Contains contacts of a group
+    Get_specific_contact:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        contact:
+          description: Contains a specific contact
+    Add_a_contact:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        _id:
+          description: ""
+          type: int
+        _group_id:
+          description: Contains group id of contact
+    Update_a_contact:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        message:
+          description: ""
+          type: string
+    Delete_a_contact:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        message:
+          description: ""
+          type: string
+    Campaign_sms_quick:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        code:
+          description: ""
+          type: string
+        message:
+          description: ""
+          type: string
+        summary:
+          description: ""
+          type: object
+    Campaign_scheduled:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        code:
+          description: ""
+          type: string
+        message:
+          description: ""
+          type: string
+        summary:
+          description: ""
+          type: object
+    Campaign_updated_scheduled:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        code:
+          description: ""
+          type: text
+        message:
+          description: ""
+          type: string
+        summary:
+          description: ""
+          type: object
+    Campaign_sms_group:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        code:
+          description: ""
+          type: string
+        message:
+          description: ""
+          type: string
+        summary:
+          description: ""
+          type: object
+    Campaign_bulk_voice:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        code:
+          description: ""
+          type: string
+        message:
+          description: ""
+          type: string
+        summary:
+          description: ""
+          type: object
+    Campaign_voice_group:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        code:
+          description: ""
+          type: string
+        message:
+          description: ""
+          type: string
+        summary:
+          description: ""
+          type: object
+    Sender_id:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        code:
+          description: ""
+          type: string
+        summary:
+          description: ""
+          type: object
+    Sender_id-registration:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        code:
+          description: ""
+          type: string
+        message:
+          description: ""
+          type: string
+        summary:
+          description: ""
+          type: object
+    Balance_sms:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        balance:
+          description: ""
+          type: int
+        bonus:
+          description: ""
+          type: int
+    Balance_voice:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        balance:
+          description: In seconds
+          type: int
+    Campaign_status:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        report:
+          description:
+            Contains an array of Campaigns with their respective delivery
+            status
+          type: array of objects
+    Status_id:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        report:
+          description: Contains properties of specific sms delivery report
+          type: object
+    Report:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        report:
+          description: Contains an array of delivery report in between specified dates
+          type: object
+        total_contacts:
+          description: Contains total number of contacts
+          type: int
+        total_charge:
+          description: Contains total charge
+          type: string
+    Calls_status:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        call:
+          description:
+            Contains an array of delivery report for voice calls sent earlier
+            with id (campaign_id) of call returned when call was made
+          type: object
+    Call_status:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        report:
+          description: Contains report for a specific voice call
+          type: object
+    sms_otp:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        code:
+          description: ""
+          type: string
+        message:
+          description: ""
+          type: string
+        summary:
+          description: ""
+          type: object
+    voice_otp:
+      type: object
+      properties:
+        status:
+          description: ""
+          type: string
+        code:
+          description: ""
+          type: string
+        campaign_id:
+          description: ""
+          type: string
+        message:
+          description: ""
+          type: string
+    Email:
+      description: User email address
+      type: string
+      format: test
+      example: john.smith@example.com
+    User:
+      type: object
+      properties:
+        username:
+          description: User supplied username
+          type: string
+          minLength: 4
+          example: John78
+        firstName:
+          description: User first name
+          type: string
+          minLength: 1
+          example: John
+        lastName:
+          description: User last name
+          type: string
+          minLength: 1
+          example: Smith
+        email:
+          $ref: "#/components/schemas/Email"
+    Schema:
+      type: object
+      title: Scalars
+      properties:
+        stringProperty:
+          description: Property name's description (type is string)1111
+          type: string
+          example: example
+        readOnlyStringProperty:
+          description: Notice this only appears in the response.
+          type: string
+          readOnly: true
+          example: example
+        writeOnlyStringProperty:
+          description: Notice this only appears in the request.
+          type: string
+          writeOnly: true
+          example: example
+        minLengthString:
+          description: Property name's description (type is string)
+          type: string
+          minLength: 4
+          example: example
+        maxLengthString:
+          description: Property name's description (type is string)
+          type: string
+          maxLength: 140
+          example: example
+        minAndMaxLengthString:
+          description: Property name's description (type is string)
+          type: string
+          minLength: 4
+          maxLength: 140
+          example: example
+        stringEnumValues:
+          description: Property name's description (type is string)
+          type: string
+          enum:
+            - sample
+            - example
+            - specimen
+            - case
+            - instance
+            - illustration
+        stringDateTime:
+          description: Property name's description (type is string, format is date-time)
+          type: string
+          format: date-time
+        stringDate:
+          description: Property name's description (type is string, format is date-time)
+          type: string
+          format: date
+        stringEmail:
+          description: Property name's description (type is string, format is email)
+          type: string
+          format: email
+        stringIpAddressV4:
+          description:
+            Property name's description (type is string, format is ipv4
+            address)
+          type: string
+          format: ipv4
+        stringIpAddressV6:
+          description:
+            Property name's description (type is string, format is ipv6
+            address)
+          type: string
+          format: ipv6
+        stringPassword:
+          description: Property name's description (type is string, format is password)
+          type: string
+          format: password
+        stringHostname:
+          description: Property name's description (type is string, format is hostname)
+          type: string
+          format: hostname
+        stringUri:
+          description: Property name's description (type is string, format is uri)
+          type: string
+          format: uri
+        stringUuid:
+          description: Property name's description (type is string, format is uuid)
+          type: string
+          format: uuid
+        numberProperty:
+          description: Property name's description (type is number)
+          type: number
+          example: 8
+        numberFloat:
+          description: Property name's description (type is number, format is float)
+          type: number
+          format: float
+        numberDouble:
+          description: Property name's description (type is number, format is double)
+          type: number
+          format: double
+        numberGreaterThanOrEquals:
+          description: Property name's description (type is number)
+          type: number
+          minimum: 5
+        numberGreaterThan:
+          description: Property name's description (type is number)
+          type: number
+        numberLessThan:
+          description: Property name's description (type is number)
+          type: number
+        numberLessThanOrEquals:
+          description: Property name's description (type is number)
+          type: number
+          maximum: 8
+        numberRange:
+          description: Property name's description (type is number)
+          type: number
+          minimum: 5
+          maximum: 8
+        numberRangeExclusiveMaximum:
+          description: Property name's description (type is number)
+          type: number
+        numberRangeExclusiveMinimumAndMaximum:
+          description: Property name's description (type is number)
+          type: number
+        numberMultipleOf:
+          description: Property name's description (type is number)
+          type: number
+          multipleOf: 2
+        integerType:
+          description: Property name's description (type is integer)
+          type: integer
+        integer32bit:
+          description: Property name's description (type is integer, format is int32)
+          type: integer
+          format: int32
+        integer64bit:
+          description: Property name's description (type is integer, format is int64)
+          type: integer
+          format: int64
+        booleanProperty:
+          description: Property name's description (type is boolean)
+          type: boolean
+  headers:
+    ExpiresAfter:
+      description: date in UTC when token expires
+      schema:
+        type: string
+        format: date-time

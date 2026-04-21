@@ -1,0 +1,72 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  darkMode: "class",
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      "colors": {
+        "on-surface-variant": "#40493d",
+        "on-primary-fixed-variant": "#005312",
+        "surface-container-highest": "#e2e3e0",
+        "surface-variant": "#e2e3e0",
+        "on-tertiary-fixed": "#3f001c",
+        "on-error-container": "#93000a",
+        "surface": "#f9f9f6",
+        "secondary": "#48626e",
+        "on-tertiary": "#ffffff",
+        "inverse-surface": "#2f312f",
+        "primary": "#0d631b",
+        "on-primary": "#ffffff",
+        "on-secondary-container": "#4e6874",
+        "tertiary": "#923357",
+        "on-primary-fixed": "#002204",
+        "surface-container": "#eeeeeb",
+        "tertiary-fixed-dim": "#ffb1c7",
+        "secondary-fixed-dim": "#afcbd8",
+        "error-container": "#ffdad6",
+        "outline": "#707a6c",
+        "on-surface": "#1a1c1b",
+        "background": "#f9f9f6",
+        "surface-bright": "#f9f9f6",
+        "surface-tint": "#1b6d24",
+        "inverse-on-surface": "#f1f1ee",
+        "on-background": "#1a1c1b",
+        "surface-dim": "#dadad7",
+        "primary-fixed": "#a3f69c",
+        "surface-container-low": "#f4f4f1",
+        "secondary-fixed": "#cbe7f5",
+        "surface-container-lowest": "#ffffff",
+        "primary-fixed-dim": "#88d982",
+        "tertiary-container": "#b14b6f",
+        "on-secondary-fixed": "#021f29",
+        "on-secondary": "#ffffff",
+        "tertiary-fixed": "#ffd9e2",
+        "on-error": "#ffffff",
+        "outline-variant": "#bfcaba",
+        "primary-container": "#2e7d32",
+        "on-secondary-fixed-variant": "#304a55",
+        "inverse-primary": "#88d982",
+        "on-tertiary-container": "#ffedf0",
+        "secondary-container": "#cbe7f5",
+        "on-tertiary-fixed-variant": "#7f2448",
+        "on-primary-container": "#cbffc2",
+        "surface-container-high": "#e8e8e5",
+        "error": "#ba1a1a"
+      },
+      "fontFamily": {
+        "headline": ["Manrope"],
+        "body": ["Inter"],
+        "label": ["Inter"],
+        "sans": ["Inter", "sans-serif"],
+        "serif": ["Manrope", "serif"],
+      }
+    }
+  },
+  plugins: [
+    require('@tailwindcss/forms'),
+    require('@tailwindcss/container-queries')
+  ],
+}
