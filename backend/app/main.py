@@ -34,25 +34,27 @@ logger = logging.getLogger("gfm.backend")
 # ─── FastAPI App ──────────────────────────────────────────────────────────────
 app = FastAPI(title="GrowForMe - User Backend API", version="1.1.0")
 
-cors_allow_origins_raw = os.getenv("CORS_ALLOW_ORIGINS", "").strip()
-cors_allow_origins = [origin.strip() for origin in cors_allow_origins_raw.split(",") if origin.strip()]
-if not cors_allow_origins:
-    cors_allow_origins = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-        "https://gfm-admin.netlify.app",
-        "https://gfm-user.netlify.app",
-    ]
-cors_allow_origin_regex = os.getenv(
-    "CORS_ALLOW_ORIGIN_REGEX",
-    (
-        r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$"
-        r"|^https://[a-z0-9-]+\.netlify\.app$"
-        r"|^https://[a-z0-9-]+\.vercel\.app$"
-    ),
+default_cors_allow_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "https://gfm-admin.netlify.app",
+    "https://gfm-user.netlify.app",
+]
+default_cors_allow_origin_regex = (
+    r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$"
+    r"|^https://[a-z0-9-]+\.netlify\.app$"
+    r"|^https://[a-z0-9-]+\.vercel\.app$"
 )
+cors_allow_origins_raw = os.getenv("CORS_ALLOW_ORIGINS", "").strip()
+env_cors_allow_origins = [origin.strip() for origin in cors_allow_origins_raw.split(",") if origin.strip()]
+cors_allow_origins = list(dict.fromkeys(default_cors_allow_origins + env_cors_allow_origins))
+cors_allow_origin_regex_raw = os.getenv("CORS_ALLOW_ORIGIN_REGEX", "").strip()
+if cors_allow_origin_regex_raw:
+    cors_allow_origin_regex = f"(?:{default_cors_allow_origin_regex})|(?:{cors_allow_origin_regex_raw})"
+else:
+    cors_allow_origin_regex = default_cors_allow_origin_regex
 
 app.add_middleware(
     CORSMiddleware,
