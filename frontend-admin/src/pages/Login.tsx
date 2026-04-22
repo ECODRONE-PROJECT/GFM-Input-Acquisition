@@ -126,16 +126,16 @@ export default function Login() {
   };
 
   return (
-    <div className="bg-surface font-body text-on-surface min-h-screen flex items-center justify-center p-4">
+    <div className="bg-surface font-body text-on-surface min-h-screen w-full flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-x-hidden">
       {/* Background Landscape */}
       <div className="fixed inset-0 z-0">
         <div className="w-full h-full bg-stone-200"></div>
         <div className="absolute inset-0 bg-gradient-to-tr from-surface to-transparent"></div>
       </div>
 
-      <main className="relative z-10 w-full max-w-md">
+      <main className="relative z-10 w-full max-w-md py-4 sm:py-0">
         <div className="bg-surface-container-low rounded-xl shadow-sm p-1">
-          <div className="bg-surface-container-lowest rounded-xl p-8 md:p-10 flex flex-col gap-8">
+          <div className="bg-surface-container-lowest rounded-xl p-5 sm:p-8 md:p-10 flex flex-col gap-6 sm:gap-8">
             
             <header className="flex flex-col items-center text-center pb-2">
               <img src="/gfm_logo.png" alt="Grow For Me Logo" className="h-12 object-contain mix-blend-multiply mb-3" />
@@ -156,7 +156,7 @@ export default function Login() {
             )}
 
             {!showOtp ? (
-              <form className="flex flex-col gap-6" onSubmit={handleInitialSubmit}>
+              <form className="flex flex-col gap-5 sm:gap-6" onSubmit={handleInitialSubmit}>
                 <div className="space-y-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="font-label text-xs font-semibold text-on-surface-variant uppercase tracking-widest ml-1" htmlFor="email">
@@ -169,7 +169,7 @@ export default function Login() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       placeholder="admin@gfm.ia" 
-                      className="w-full h-12 px-4 bg-surface-container-highest border-none rounded-lg focus:ring-2 focus:ring-primary-container transition-all text-on-surface font-medium placeholder:text-outline-variant outline-none"
+                      className="w-full h-11 sm:h-12 px-4 bg-surface-container-highest border-none rounded-lg focus:ring-2 focus:ring-primary-container transition-all text-on-surface font-medium placeholder:text-outline-variant outline-none"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
@@ -184,7 +184,7 @@ export default function Login() {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         placeholder="••••••••" 
-                        className="w-full h-12 px-4 bg-surface-container-highest border-none rounded-lg focus:ring-2 focus:ring-primary-container transition-all text-on-surface font-medium placeholder:text-outline-variant outline-none"
+                        className="w-full h-11 sm:h-12 px-4 bg-surface-container-highest border-none rounded-lg focus:ring-2 focus:ring-primary-container transition-all text-on-surface font-medium placeholder:text-outline-variant outline-none"
                       />
                       <button
                         type="button"
@@ -205,7 +205,7 @@ export default function Login() {
                   <button
                     type="submit"
                     disabled={isSubmittingCredentials}
-                    className="w-full h-12 bg-gradient-to-r from-primary to-primary-container text-on-primary font-headline font-bold rounded-lg shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full h-11 sm:h-12 bg-gradient-to-r from-primary to-primary-container text-on-primary font-headline font-bold rounded-lg shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                       {isSubmittingCredentials ? 'Starting secure login...' : 'Secure Log In'}
                       <span className="material-symbols-outlined text-xl">login</span>
@@ -216,9 +216,9 @@ export default function Login() {
                 </div>
               </form>
             ) : (
-              <form className="flex flex-col gap-6" onSubmit={handleOtpSubmit}>
-                <div className="bg-surface-container-low p-6 rounded-lg space-y-4">
-                  <div className="flex items-center gap-3">
+              <form className="flex flex-col gap-5 sm:gap-6" onSubmit={handleOtpSubmit}>
+                <div className="bg-surface-container-low p-4 sm:p-6 rounded-lg space-y-4">
+                  <div className="flex items-start sm:items-center gap-3">
                     <span className="material-symbols-outlined text-primary">sms</span>
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-on-surface leading-tight">SMS OTP Verification</p>
@@ -240,7 +240,7 @@ export default function Login() {
                     maxLength={6}
                     required
                     placeholder="Enter 6-digit OTP"
-                    className="w-full h-12 px-4 tracking-[0.35em] text-center text-xl font-bold bg-surface-container-lowest border-none rounded-lg ring-1 ring-outline-variant focus:ring-2 focus:ring-primary-container outline-none"
+                    className="w-full h-11 sm:h-12 px-4 tracking-[0.2em] sm:tracking-[0.35em] text-center text-lg sm:text-xl font-bold bg-surface-container-lowest border-none rounded-lg ring-1 ring-outline-variant focus:ring-2 focus:ring-primary-container outline-none"
                   />
                   <button
                     type="button"
@@ -259,7 +259,7 @@ export default function Login() {
                   <button
                     type="submit"
                     disabled={isSubmittingOtp}
-                    className="w-full h-12 bg-gradient-to-r from-primary to-primary-container text-on-primary font-headline font-bold rounded-lg shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full h-11 sm:h-12 bg-gradient-to-r from-primary to-primary-container text-on-primary font-headline font-bold rounded-lg shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {isSubmittingOtp ? 'Verifying OTP...' : 'Verify and Enter'}
                     <span className="material-symbols-outlined text-xl">admin_panel_settings</span>
@@ -268,15 +268,15 @@ export default function Login() {
               </form>
             )}
 
-            <footer className="mt-4 pt-6 border-t border-surface-container-highest flex items-center justify-center gap-4">
+            <footer className="mt-2 sm:mt-4 pt-4 sm:pt-6 border-t border-surface-container-highest flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
               <div className="flex items-center gap-1.5 opacity-60">
                 <span className="material-symbols-outlined text-sm">verified_user</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest">Enterprise Secure</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em]">Enterprise Secure</span>
               </div>
-              <div className="h-3 w-px bg-surface-container-highest"></div>
+              <div className="hidden sm:block h-3 w-px bg-surface-container-highest"></div>
               <div className="flex items-center gap-1.5 opacity-60">
                 <span className="material-symbols-outlined text-sm">eco</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest">v2.4.0 Agronomy</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em]">v2.4.0 Agronomy</span>
               </div>
             </footer>
           </div>
