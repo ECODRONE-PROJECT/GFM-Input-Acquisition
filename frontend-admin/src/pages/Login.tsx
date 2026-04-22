@@ -53,11 +53,15 @@ export default function Login() {
       setOtp('');
       setShowOtp(true);
       setResendCooldown(45);
-      if (challenge.delivery_mode !== 'sms') {
-        setError('SMS OTP delivery failed. Please try again or contact support.');
-        return;
+      if (challenge.delivery_mode === 'sms') {
+        setNotice(`Code sent via SMS to ${challenge.target_hint}.`);
+      } else if (challenge.delivery_mode === 'log') {
+        setNotice(
+          'SMS gateway is not configured. OTP is available in backend logs (ADMIN_OTP_DEV_ONLY). Enter it below.'
+        );
+      } else {
+        setNotice(`OTP challenge created via ${challenge.delivery_mode}. Enter the received code below.`);
       }
-      setNotice(`Code sent via SMS to ${challenge.target_hint}.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid admin credentials.');
     } finally {
@@ -105,11 +109,15 @@ export default function Login() {
       setExpiresInMinutes(challenge.expires_in_minutes);
       setOtp('');
       setResendCooldown(45);
-      if (challenge.delivery_mode !== 'sms') {
-        setError('SMS OTP delivery failed. Please try again.');
-        return;
+      if (challenge.delivery_mode === 'sms') {
+        setNotice(`A new code was sent to ${challenge.target_hint}.`);
+      } else if (challenge.delivery_mode === 'log') {
+        setNotice(
+          'SMS gateway is not configured. New OTP is available in backend logs (ADMIN_OTP_DEV_ONLY).'
+        );
+      } else {
+        setNotice(`A new OTP challenge was created via ${challenge.delivery_mode}.`);
       }
-      setNotice(`A new code was sent to ${challenge.target_hint}.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not resend OTP.');
     } finally {
@@ -217,7 +225,9 @@ export default function Login() {
                       <p className="text-xs text-on-surface-variant">
                         {deliveryMode === 'sms'
                           ? `Enter the 6-digit code sent to ${targetHint} via mNotify SMS.`
-                          : 'Waiting for SMS delivery.'}
+                          : deliveryMode === 'log'
+                            ? 'SMS is not configured. Check backend logs for ADMIN_OTP_DEV_ONLY and enter the OTP.'
+                            : `Enter the OTP delivered via ${deliveryMode || 'configured channel'}.`}
                         {expiresInMinutes ? ` Expires in ${expiresInMinutes} minutes.` : ''}
                       </p>
                     </div>
