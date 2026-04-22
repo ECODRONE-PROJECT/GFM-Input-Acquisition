@@ -42,10 +42,16 @@ if not cors_allow_origins:
         "http://127.0.0.1:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5174",
+        "https://gfm-admin.netlify.app",
+        "https://gfm-user.netlify.app",
     ]
 cors_allow_origin_regex = os.getenv(
     "CORS_ALLOW_ORIGIN_REGEX",
-    r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$",
+    (
+        r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$"
+        r"|^https://[a-z0-9-]+\.netlify\.app$"
+        r"|^https://[a-z0-9-]+\.vercel\.app$"
+    ),
 )
 
 app.add_middleware(
