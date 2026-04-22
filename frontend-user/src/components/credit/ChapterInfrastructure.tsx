@@ -178,7 +178,7 @@ export const ChapterInfrastructure: React.FC<ChapterInfrastructureProps> = ({ da
             CAPITAL ASSETS
           </label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', bg: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <Tractor size={20} color="#64748b" />
                 <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1a1c1b' }}>Motorbike</span>
@@ -191,7 +191,7 @@ export const ChapterInfrastructure: React.FC<ChapterInfrastructureProps> = ({ da
               </button>
             </div>
 
-            <div style={{ display: 'flex', bg: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <Beef size={20} color="#64748b" />
                 <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1a1c1b' }}>Livestock</span>

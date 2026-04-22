@@ -120,6 +120,7 @@ export type CreditApplicationPayload = {
   consent_credit_assessment: boolean;
   drought_flood_index: number;
   gender: string;
+  national_id?: string;
   savings: number;
   payment_frequency: number;
   crop_types: string;
