@@ -83,6 +83,9 @@ AUDIT_LOG_DB_WRITES = os.getenv("AUDIT_LOG_DB_WRITES", "false").strip().lower() 
 CATALOG_CACHE_TTL_SECONDS = int(os.getenv("CATALOG_CACHE_TTL_SECONDS", "45"))
 ADMIN_SUMMARY_CACHE_TTL_SECONDS = int(os.getenv("ADMIN_SUMMARY_CACHE_TTL_SECONDS", "15"))
 TABLE_SUPPORT_CACHE_TTL_SECONDS = int(os.getenv("TABLE_SUPPORT_CACHE_TTL_SECONDS", "120"))
+ADMIN_ACTIVITY_CACHE_TTL_SECONDS = int(os.getenv("ADMIN_ACTIVITY_CACHE_TTL_SECONDS", "12"))
+ADMIN_NOTIFICATIONS_CACHE_TTL_SECONDS = int(os.getenv("ADMIN_NOTIFICATIONS_CACHE_TTL_SECONDS", "8"))
+AUTH_PROFILE_CACHE_TTL_SECONDS = int(os.getenv("AUTH_PROFILE_CACHE_TTL_SECONDS", "900"))
 OTP_SMS_ASYNC = os.getenv("OTP_SMS_ASYNC", "true").strip().lower() in {"1", "true", "yes", "on"}
 DISTRIBUTION_WEBHOOK_TOKEN = os.getenv("DISTRIBUTION_WEBHOOK_TOKEN", "").strip()
 ADMIN_API_TOKEN = os.getenv("ADMIN_API_TOKEN", "").strip()
@@ -118,6 +121,14 @@ catalog_cache_expires_at = datetime.fromtimestamp(0, tz=timezone.utc)
 admin_summary_cache_payload: Optional[dict[str, Any]] = None
 admin_summary_cache_expires_at = datetime.fromtimestamp(0, tz=timezone.utc)
 admin_summary_cache_lock = threading.Lock()
+admin_activity_cache_feed: list[dict[str, Any]] = []
+admin_activity_cache_expires_at = datetime.fromtimestamp(0, tz=timezone.utc)
+admin_activity_cache_lock = threading.Lock()
+admin_notifications_cache_feeds: dict[bool, list[dict[str, Any]]] = {}
+admin_notifications_cache_expires_at: dict[bool, datetime] = {}
+admin_notifications_cache_lock = threading.Lock()
+auth_profile_cache: dict[str, tuple[Optional[dict[str, Any]], datetime]] = {}
+auth_profile_cache_lock = threading.Lock()
 table_support_cache: dict[str, tuple[bool, datetime]] = {}
 table_support_cache_lock = threading.Lock()
 
@@ -428,11 +439,20 @@ def notify_admins_order_follow_up_sms(order_id: str, user_id: str, tracking_stat
 
 
 def fetch_auth_user_profile(user_id: str) -> Optional[dict[str, Any]]:
-    if not user_id or not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+    safe_user_id = str(user_id or "").strip()
+    if not safe_user_id or not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
         return None
+
+    if AUTH_PROFILE_CACHE_TTL_SECONDS > 0:
+        with auth_profile_cache_lock:
+            cached = auth_profile_cache.get(safe_user_id)
+            if cached and now_utc() < cached[1]:
+                return copy.deepcopy(cached[0]) if cached[0] is not None else None
+
+    cached_profile: Optional[dict[str, Any]] = None
     try:
         response = httpx.get(
-            f"{SUPABASE_URL.rstrip('/')}/auth/v1/admin/users/{user_id}",
+            f"{SUPABASE_URL.rstrip('/')}/auth/v1/admin/users/{safe_user_id}",
             headers={
                 "apikey": SUPABASE_SERVICE_ROLE_KEY,
                 "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
@@ -440,16 +460,28 @@ def fetch_auth_user_profile(user_id: str) -> Optional[dict[str, Any]]:
             timeout=20.0,
         )
         if response.status_code >= 300:
-            logger.warning(f"Could not fetch auth profile for user {user_id} (status={response.status_code}).")
-            return None
-        body = response.json()
-        if isinstance(body, dict):
-            if isinstance(body.get("user"), dict):
-                return body.get("user")
-            return body
+            logger.warning(f"Could not fetch auth profile for user {safe_user_id} (status={response.status_code}).")
+            cached_profile = None
+        else:
+            body = response.json()
+            if isinstance(body, dict):
+                if isinstance(body.get("user"), dict):
+                    cached_profile = body.get("user")
+                else:
+                    cached_profile = body
+            else:
+                cached_profile = None
     except Exception as exc:
-        logger.warning(f"Could not fetch auth profile for user {user_id}: {exc}")
-    return None
+        logger.warning(f"Could not fetch auth profile for user {safe_user_id}: {exc}")
+        cached_profile = None
+
+    if AUTH_PROFILE_CACHE_TTL_SECONDS > 0:
+        with auth_profile_cache_lock:
+            auth_profile_cache[safe_user_id] = (
+                copy.deepcopy(cached_profile) if cached_profile is not None else None,
+                now_utc() + timedelta(seconds=AUTH_PROFILE_CACHE_TTL_SECONDS),
+            )
+    return cached_profile
 
 
 def resolve_user_display_name(user_id: str) -> str:
@@ -662,6 +694,51 @@ def set_cached_admin_summary_payload(payload: dict[str, Any]):
     with admin_summary_cache_lock:
         admin_summary_cache_payload = copy.deepcopy(payload)
         admin_summary_cache_expires_at = now_utc() + timedelta(seconds=ADMIN_SUMMARY_CACHE_TTL_SECONDS)
+
+
+def get_cached_admin_activity_feed() -> Optional[list[dict[str, Any]]]:
+    if ADMIN_ACTIVITY_CACHE_TTL_SECONDS <= 0:
+        return None
+    with admin_activity_cache_lock:
+        if not admin_activity_cache_feed:
+            return None
+        if now_utc() >= admin_activity_cache_expires_at:
+            return None
+        return copy.deepcopy(admin_activity_cache_feed)
+
+
+def set_cached_admin_activity_feed(feed: list[dict[str, Any]]):
+    global admin_activity_cache_feed, admin_activity_cache_expires_at
+    if ADMIN_ACTIVITY_CACHE_TTL_SECONDS <= 0:
+        return
+    with admin_activity_cache_lock:
+        admin_activity_cache_feed = copy.deepcopy(feed)
+        admin_activity_cache_expires_at = now_utc() + timedelta(seconds=ADMIN_ACTIVITY_CACHE_TTL_SECONDS)
+
+
+def get_cached_admin_notifications_feed(include_info: bool) -> Optional[list[dict[str, Any]]]:
+    if ADMIN_NOTIFICATIONS_CACHE_TTL_SECONDS <= 0:
+        return None
+    key = bool(include_info)
+    with admin_notifications_cache_lock:
+        cached_feed = admin_notifications_cache_feeds.get(key)
+        cached_expiry = admin_notifications_cache_expires_at.get(key)
+        if not cached_feed or not cached_expiry:
+            return None
+        if now_utc() >= cached_expiry:
+            return None
+        return copy.deepcopy(cached_feed)
+
+
+def set_cached_admin_notifications_feed(include_info: bool, feed: list[dict[str, Any]]):
+    if ADMIN_NOTIFICATIONS_CACHE_TTL_SECONDS <= 0:
+        return
+    key = bool(include_info)
+    with admin_notifications_cache_lock:
+        admin_notifications_cache_feeds[key] = copy.deepcopy(feed)
+        admin_notifications_cache_expires_at[key] = now_utc() + timedelta(
+            seconds=ADMIN_NOTIFICATIONS_CACHE_TTL_SECONDS
+        )
 
 
 def get_catalog_snapshot(sb: Client) -> tuple[list[dict[str, Any]], bool]:
@@ -3902,7 +3979,15 @@ async def admin_list_activity(
     admin = require_admin_session(authorization)
     sb = ensure_service_supabase()
     safe_limit = max(1, min(limit, 100))
-    fetch_limit = min(max(safe_limit * 4, 40), 400)
+    cached_feed = get_cached_admin_activity_feed()
+    if cached_feed is not None:
+        return {
+            "count": min(len(cached_feed), safe_limit),
+            "activity": cached_feed[:safe_limit],
+            "admin": {"name": admin["name"], "email": admin["email"]},
+        }
+
+    fetch_limit = 400
 
     feed: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
@@ -4078,6 +4163,7 @@ async def admin_list_activity(
             logger.warning(f"Could not fetch admin system activity logs: {exc}")
 
     feed.sort(key=lambda item: parse_admin_activity_timestamp(item.get("timestamp")), reverse=True)
+    set_cached_admin_activity_feed(feed)
     activity = feed[:safe_limit]
     return {
         "count": len(activity),
@@ -4095,7 +4181,16 @@ async def admin_list_notifications(
     admin = require_admin_session(authorization)
     sb = ensure_service_supabase()
     safe_limit = max(1, min(limit, 100))
-    fetch_limit = min(max(safe_limit * 5, 50), 500)
+    cached_feed = get_cached_admin_notifications_feed(include_info)
+    if cached_feed is not None:
+        paged_cached = cached_feed[:safe_limit]
+        return {
+            "count": len(paged_cached),
+            "notifications": paged_cached,
+            "admin": {"name": admin["name"], "email": admin["email"]},
+        }
+
+    fetch_limit = 500
     now_iso = now_utc().isoformat()
 
     notifications: list[dict[str, Any]] = []
@@ -4326,6 +4421,7 @@ async def admin_list_notifications(
             logger.warning(f"Could not build log notifications: {exc}")
 
     notifications.sort(key=lambda item: parse_admin_activity_timestamp(item.get("timestamp")), reverse=True)
+    set_cached_admin_notifications_feed(include_info, notifications)
     paged = notifications[:safe_limit]
     return {
         "count": len(paged),

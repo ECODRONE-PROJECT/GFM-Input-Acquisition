@@ -39,7 +39,7 @@ export default function AdminLayout() {
 
   const fetchNotifs = async () => {
     try {
-      const data = await fetchAdminNotifications(100, false);
+      const data = await fetchAdminNotifications(40, false);
       setNotifications(data.filter((item) => !item.isRead));
     } catch {
       // background fail

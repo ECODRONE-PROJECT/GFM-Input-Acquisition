@@ -62,7 +62,7 @@ export default function Dashboard() {
 
   const refreshNotifications = async () => {
     try {
-      const latest = await fetchAdminNotifications(100, false);
+      const latest = await fetchAdminNotifications(40, false);
       setNotifications(latest.filter((item) => !item.isRead));
     } catch {
       // Keep existing state on transient fetch failures.
@@ -80,7 +80,7 @@ export default function Dashboard() {
       fetchAdminAggregateDeals(),
       fetchAdminSystemSummary(),
       fetchAdminActivity(10),
-      fetchAdminNotifications(100, false),
+      fetchAdminNotifications(40, false),
     ]);
 
     if (inventoryResult.status === 'fulfilled') {
@@ -136,19 +136,9 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => void refreshNotifications(), 15000);
-    const handleFocus = () => void refreshNotifications();
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void refreshNotifications();
-      }
-    };
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    const interval = setInterval(() => void refreshNotifications(), 45000);
     return () => {
       clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
