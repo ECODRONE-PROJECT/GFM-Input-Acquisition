@@ -34,6 +34,7 @@ const initialPayload: CreditApplicationPayload = {
   crop_types: 'Maize',
   is_association_member: false,
   has_motorbike: false,
+  national_id: '',
   acres: 0,
   satellite_verified: false,
   repayment_rate: 60,
@@ -215,7 +216,7 @@ export default function CreditPage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9f9f6' }}>
-        <div style={{ animate: 'pulse 2s infinite', fontSize: '1.2rem', fontWeight: 800, color: '#084c17', fontFamily: 'Newsreader, serif' }}>
+        <div style={{ animation: 'pulse 2s infinite', fontSize: '1.2rem', fontWeight: 800, color: '#084c17', fontFamily: 'Newsreader, serif' }}>
           Loading your agronomy form...
         </div>
       </div>
@@ -377,11 +378,11 @@ export default function CreditPage() {
         <div style={{ flex: 1, backgroundColor: 'white', borderRadius: '40px', padding: '3.5rem', boxShadow: '0 4px 30px rgba(0,0,0,0.03)', position: 'relative', minHeight: '600px', zIndex: 10 }}>
           
           <div style={{ marginBottom: '4rem' }}>
-             {step === 1 && <ChapterIdentity data={payload} updateData={updatePayload} onFileUpload={handleFileUpload} documents={documentQueue} />}
-             {step === 2 && <ChapterFinance data={payload} updateData={updatePayload} onFileUpload={handleFileUpload} documents={documentQueue} />}
-             {step === 3 && <ChapterFarm data={payload} updateData={updatePayload} />}
-             {step === 4 && <ChapterInfrastructure data={payload} updateData={updatePayload} />}
-             {step === 5 && <ChapterSocial data={payload} updateData={updatePayload} />}
+             {step === 1 && <ChapterIdentity data={payload as any} updateData={updatePayload as any} onFileUpload={handleFileUpload} documents={documentQueue} />}
+             {step === 2 && <ChapterFinance data={payload as any} updateData={updatePayload as any} onFileUpload={handleFileUpload} documents={documentQueue} />}
+             {step === 3 && <ChapterFarm data={payload as any} updateData={updatePayload as any} />}
+             {step === 4 && <ChapterInfrastructure data={payload as any} updateData={updatePayload as any} />}
+             {step === 5 && <ChapterSocial data={payload as any} updateData={updatePayload as any} />}
              {step === 6 && (
                <ChapterSummary 
                  data={payload} 

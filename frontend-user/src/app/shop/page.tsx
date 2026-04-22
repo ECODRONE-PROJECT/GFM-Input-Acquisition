@@ -900,7 +900,11 @@ export default function Shop() {
                             Out of Stock
                           </button>
                         ) : (
-                          <button className="btn-add-cart" style={{ width: '100%', backgroundColor: '#f4f4f1', color: '#1a1c1b' }} onClick={() => addToCart({ ...product, quantity: 1 })}>
+                          <button
+                            className="btn-add-cart"
+                            style={{ width: '100%', backgroundColor: '#f4f4f1', color: '#1a1c1b' }}
+                            onClick={() => addToCart({ ...product, imageUrl: product.imageUrl ?? undefined, quantity: 1 })}
+                          >
                             <ShoppingCart size={16} strokeWidth={2.5} color="#1a1c1b" /> Add to Cart
                           </button>
                         )}
