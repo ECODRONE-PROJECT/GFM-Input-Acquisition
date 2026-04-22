@@ -238,12 +238,15 @@ export type CreditScoreResponse = {
 };
 
 const CONFIGURED_API_BASE = (import.meta.env.VITE_API_BASE_URL || '').trim();
+const DEFAULT_REMOTE_API_BASE = 'https://gfm-backend.onrender.com/api';
 const LOCAL_API_BASE = 'http://localhost:8000/api';
 
 function getApiBaseCandidates() {
   const candidates: string[] = [];
   if (CONFIGURED_API_BASE) {
     candidates.push(CONFIGURED_API_BASE);
+  } else {
+    candidates.push(DEFAULT_REMOTE_API_BASE);
   }
 
   if (typeof window !== 'undefined') {
@@ -264,7 +267,7 @@ function getApiBaseCandidates() {
   return [...new Set(normalized)];
 }
 
-const API_BASE = getApiBaseCandidates()[0] || LOCAL_API_BASE;
+const API_BASE = getApiBaseCandidates()[0] || DEFAULT_REMOTE_API_BASE;
 
 type ApiErrorBody = {
   detail?: unknown;

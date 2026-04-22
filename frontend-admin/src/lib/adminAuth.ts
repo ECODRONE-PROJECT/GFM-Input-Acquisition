@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://gfm-backend.onrender.com/api';
 const ADMIN_SESSION_STORAGE_KEY = 'gfm_admin_session_v1';
 
 export type AdminSession = {
