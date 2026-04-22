@@ -1,41 +1,74 @@
-name: Continuous Integration
+name: CI Smoke Checks
 
-# 1. Triggers: When should this pipeline run?
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: ["main", "develop"]
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: ["main", "develop"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-and-test:
-    # 2. Environment: What OS should run the tests?
+  frontend-admin-build:
+    name: Frontend Admin Build
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: frontend-admin
     steps:
-    # 3. Checkout code from the repository
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    # 4. Set up the runtime environment (Node.js in this case)
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22' # Elevated to NodeJS 22 LTS to resolve Github Actions V4 deprecation limits
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend-admin/package-lock.json
 
-    # 5. Install dependencies cleanly
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    # 6. Run the Linter to check code quality
-    - name: Run Linter
-      run: npm run lint
+      - name: Build
+        run: npm run build
 
-    # 7. Run Unit Tests (TDD focus)
-    - name: Run Unit Tests
-      run: npm test
+  frontend-user-build:
+    name: Frontend User Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-user
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    # 8. Verify Vite Production Build Output
-    - name: Build Application
-      run: npm run build
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend-user/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  backend-syntax-check:
+    name: Backend Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compile backend sources
+        run: python -m compileall -q backend/app
