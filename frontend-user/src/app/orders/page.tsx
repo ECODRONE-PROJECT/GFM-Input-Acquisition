@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, ShoppingCart, User, Filter, Download, Plus, MoreVertical, Truck, Search, CheckCircle } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
@@ -87,6 +87,8 @@ function csvEscape(value: string | number) {
   return `"${text}"`;
 }
 
+const ORDER_STATUS_SYNC_INTERVAL_MS = 10000;
+
 export default function DashboardOrdersPage() {
   const { user } = useAuth();
   const userId = user?.id ?? '';
@@ -116,6 +118,21 @@ export default function DashboardOrdersPage() {
   const [followUpNote, setFollowUpNote] = useState('');
   const [isSubmittingFollowUp, setIsSubmittingFollowUp] = useState(false);
   const [followUpSuccess, setFollowUpSuccess] = useState(false);
+  const ordersRef = useRef<EnrichedOrder[]>([]);
+  const catalogMapRef = useRef<Map<string, CatalogInput> | null>(null);
+  const isRefreshingRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const handleFollowUpTrigger = (orderId: string) => {
     const lastKey = `followup_${orderId}`;
@@ -178,26 +195,42 @@ export default function DashboardOrdersPage() {
 
   useEffect(() => {
     if (!userId) return;
-    const load = async () => {
-      setLoading(true);
-      setLoadError('');
-      try {
-        const [historyRes, catalogRes] = await Promise.all([
-          fetchOrderHistory(userId).catch(() => []),
-          getCatalogInputs().catch(() => []),
-        ]);
 
-        const catalogMap = new Map<string, CatalogInput>();
-        for (const item of catalogRes) {
-          catalogMap.set(item.id, item);
+    const refreshOrders = async (showLoader = false) => {
+      if (isRefreshingRef.current) return;
+      isRefreshingRef.current = true;
+      if (showLoader) {
+        setLoading(true);
+      }
+
+      try {
+        const historyRes = await fetchOrderHistory(userId).catch(() => []);
+        let catalogMap = catalogMapRef.current;
+        if (!catalogMap) {
+          const catalogRes = await getCatalogInputs().catch(() => []);
+          catalogMap = new Map<string, CatalogInput>();
+          for (const item of catalogRes) {
+            catalogMap.set(item.id, item);
+          }
+          catalogMapRef.current = catalogMap;
         }
 
-        const detailResponses = await Promise.all(
-          historyRes.map((order) => fetchOrderDetails(userId, order.order_id).catch(() => null))
-        );
+        const existingMap = new Map(ordersRef.current.map((order) => [order.order_id, order]));
+        const orderIdsNeedingDetail = historyRes
+          .map((order) => order.order_id)
+          .filter((orderId) => !existingMap.has(orderId));
 
-        const enrichedOrders: EnrichedOrder[] = historyRes.map((order, index) => {
-          const detail = detailResponses[index];
+        const detailEntries = await Promise.all(
+          orderIdsNeedingDetail.map(async (orderId) => {
+            const detail = await fetchOrderDetails(userId, orderId).catch(() => null);
+            return [orderId, detail] as const;
+          })
+        );
+        const detailsByOrderId = new Map(detailEntries);
+
+        const enrichedOrders: EnrichedOrder[] = historyRes.map((order) => {
+          const existing = existingMap.get(order.order_id);
+          const detail = detailsByOrderId.get(order.order_id) ?? null;
           const items = detail?.order?.items || [];
           const firstItem = Array.isArray(items) && items.length > 0 ? items[0] : null;
           const firstItemId = String(firstItem?.id || '').trim();
@@ -207,22 +240,24 @@ export default function DashboardOrdersPage() {
           const fallbackUnits = Math.max(Number(order.total_quantity || order.item_count || 0), 0);
           const totalUnits = computedUnits > 0 ? computedUnits : fallbackUnits;
 
-          let displayNameValue = `Order #${order.order_id.slice(0, 8).toUpperCase()}`;
-          let displayCategory = 'General';
-          let displayImage = '/fertilizer.png';
+          let displayNameValue = existing?.display_name || `Order #${order.order_id.slice(0, 8).toUpperCase()}`;
+          let displayCategory = existing?.display_category || 'General';
+          let displayImage = existing?.display_image || '/fertilizer.png';
 
-          if (firstItemId.startsWith('bulk:')) {
-            displayNameValue = 'Community Bulk Buy';
-            displayCategory = 'Group Purchase';
-            displayImage = '/fertilizer.png';
-          } else if (firstItemId) {
-            const matched = catalogMap.get(firstItemId);
-            if (matched) {
-              displayNameValue = matched.name;
-              displayCategory = matched.type;
-              displayImage = resolveCatalogImage(matched);
-            } else {
-              displayNameValue = firstItemId;
+          if (!existing) {
+            if (firstItemId.startsWith('bulk:')) {
+              displayNameValue = 'Community Bulk Buy';
+              displayCategory = 'Group Purchase';
+              displayImage = '/fertilizer.png';
+            } else if (firstItemId) {
+              const matched = catalogMap?.get(firstItemId);
+              if (matched) {
+                displayNameValue = matched.name;
+                displayCategory = matched.type;
+                displayImage = resolveCatalogImage(matched);
+              } else {
+                displayNameValue = firstItemId;
+              }
             }
           }
 
@@ -235,15 +270,42 @@ export default function DashboardOrdersPage() {
           };
         });
 
+        if (!mountedRef.current) return;
         setOrders(enrichedOrders);
+        setLoadError('');
       } catch (err) {
         console.error(err);
-        setLoadError(err instanceof Error ? err.message : 'Could not load orders dashboard.');
+        if (mountedRef.current) {
+          setLoadError(err instanceof Error ? err.message : 'Could not load orders dashboard.');
+        }
       } finally {
-        setLoading(false);
+        if (mountedRef.current && showLoader) {
+          setLoading(false);
+        }
+        isRefreshingRef.current = false;
       }
     };
-    void load();
+
+    void refreshOrders(true);
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void refreshOrders(false);
+      }
+    }, ORDER_STATUS_SYNC_INTERVAL_MS);
+    const onFocus = () => void refreshOrders(false);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void refreshOrders(false);
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [userId]);
 
   const activeOrders = orders.filter(o => {
