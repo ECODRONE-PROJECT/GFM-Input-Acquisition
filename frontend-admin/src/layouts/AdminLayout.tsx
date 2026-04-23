@@ -150,7 +150,7 @@ export default function AdminLayout() {
             <span className="material-symbols-outlined">payments</span>
             <span>Credit Apps</span>
           </NavLink>
-          <NavLink to="/admin/operations" className={navItemClass}>
+          <NavLink to="/admin/operations" className={navItemClass} data-section="operations">
             <span className="material-symbols-outlined">groups</span>
             <span>Operations</span>
           </NavLink>
