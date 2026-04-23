@@ -150,6 +150,10 @@ export default function AdminLayout() {
             <span className="material-symbols-outlined">payments</span>
             <span>Credit Apps</span>
           </NavLink>
+          <NavLink to="/admin/operations" className={navItemClass}>
+            <span className="material-symbols-outlined">groups</span>
+            <span>Operations</span>
+          </NavLink>
           <button onClick={handleToggleDrawer} className={`flex items-center w-full gap-3 px-4 py-3 rounded-xl transition-all ${isDrawerOpen ? 'text-primary-container font-bold bg-white shadow-sm' : 'text-stone-600 hover:text-primary-container hover:bg-stone-200/50'}`}>
             <div className="relative">
               <span className="material-symbols-outlined">notifications</span>
@@ -161,10 +165,6 @@ export default function AdminLayout() {
             </div>
             <span>Notifications</span>
           </button>
-          <NavLink to="/admin/audit" className={navItemClass}>
-            <span className="material-symbols-outlined">settings</span>
-            <span>Settings</span>
-          </NavLink>
         </nav>
         
         <div className="mt-auto p-4 bg-surface-container-highest rounded-xl cursor-pointer" onClick={handleLogout}>

@@ -6,7 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Inventory from './pages/Inventory'
 import Orders from './pages/Orders'
 import CreditApps from './pages/CreditApps'
-import Settings from './pages/Settings'
+import Operations from './pages/Operations'
 import AggregateDeals from './pages/AggregateDeals'
 import Notifications from './pages/Notifications'
 import { getAdminSession } from './lib/adminAuth'
@@ -52,8 +52,8 @@ function App() {
         <Route path="deals" element={<AggregateDeals />} />
         <Route path="orders" element={<Orders />} />
         <Route path="credit" element={<CreditApps />} />
+        <Route path="operations" element={<Operations />} />
         <Route path="notifications" element={<Notifications />} />
-        <Route path="audit" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

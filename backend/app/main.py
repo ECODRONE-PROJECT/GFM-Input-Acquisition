@@ -97,6 +97,9 @@ AUTH_PROFILE_CACHE_TTL_SECONDS = int(os.getenv("AUTH_PROFILE_CACHE_TTL_SECONDS",
 OTP_SMS_ASYNC = os.getenv("OTP_SMS_ASYNC", "true").strip().lower() in {"1", "true", "yes", "on"}
 DISTRIBUTION_WEBHOOK_TOKEN = os.getenv("DISTRIBUTION_WEBHOOK_TOKEN", "").strip()
 ADMIN_API_TOKEN = os.getenv("ADMIN_API_TOKEN", "").strip()
+PAYSTACK_CALLBACK_URL_RUNTIME = PAYSTACK_CALLBACK_URL
+DISTRIBUTION_WEBHOOK_TOKEN_RUNTIME = DISTRIBUTION_WEBHOOK_TOKEN
+ADMIN_API_TOKEN_RUNTIME = ADMIN_API_TOKEN
 ADMIN_SESSION_TTL_HOURS = int(os.getenv("ADMIN_SESSION_TTL_HOURS", "8"))
 ADMIN_ALERT_PHONES_RAW = os.getenv("ADMIN_ALERT_PHONES", "").strip()
 ADMIN_PREDEFINED_ACCOUNTS_RAW = os.getenv(
@@ -203,11 +206,13 @@ ORDER_STATUS_LABELS = {
 ORDER_REFUNDABLE_STATUSES = {"cancelled", "failed"}
 ORDER_NON_REVENUE_STATUSES = {"cancelled", "failed"}
 DEFAULT_DELIVERY_WINDOW_DAYS = int(os.getenv("DEFAULT_DELIVERY_WINDOW_DAYS", "2"))
+DEFAULT_DELIVERY_WINDOW_DAYS_RUNTIME = DEFAULT_DELIVERY_WINDOW_DAYS
 CREDIT_DOC_UPLOAD_DIR = os.path.join(BACKEND_DIR, "uploads", "credit_docs")
 CREDIT_DOC_MAX_BYTES = int(os.getenv("CREDIT_DOC_MAX_BYTES", str(8 * 1024 * 1024)))
 CREDIT_APPLICATION_USER_STATUSES = {"submitted", "under_review", "pending_documents", "approved", "rejected"}
 CREDIT_ACCOUNT_SPENDABLE_STATUSES = {"approved", "active"}
 CREDIT_APPLICATION_DECISION_STATUSES = {"under_review", "pending_documents", "approved", "rejected"}
+CONSIGNMENT_STATUSES = {"pending", "approved", "rejected"}
 AGGREGATE_DEAL_TYPES = {"bulk", "auction"}
 AGGREGATE_DEAL_STATUSES = {"draft", "active", "closed", "cancelled"}
 BULK_PAYMENT_HOLD_MINUTES = int(os.getenv("BULK_PAYMENT_HOLD_MINUTES", "60"))
@@ -267,9 +272,9 @@ def ensure_paystack_config():
 
 
 def ensure_admin_token(header_value: Optional[str]):
-    if not ADMIN_API_TOKEN:
+    if not ADMIN_API_TOKEN_RUNTIME:
         raise HTTPException(status_code=500, detail="ADMIN_API_TOKEN is not configured.")
-    if not header_value or header_value.strip() != ADMIN_API_TOKEN:
+    if not header_value or header_value.strip() != ADMIN_API_TOKEN_RUNTIME:
         raise HTTPException(status_code=401, detail="Invalid admin token.")
 
 
@@ -444,6 +449,127 @@ def notify_admins_order_follow_up_sms(order_id: str, user_id: str, tracking_stat
             failed += 1
             logger.error(f"Could not dispatch admin follow-up SMS to {phone} for order {order_id}: {exc}")
     return {"attempted": attempted, "queued": queued, "failed": failed}
+
+
+def format_credit_application_status(status: Optional[str]) -> str:
+    normalized = normalize_credit_application_status(status)
+    labels = {
+        "submitted": "Submitted",
+        "under_review": "Under Review",
+        "pending_documents": "Pending Documents",
+        "approved": "Approved",
+        "rejected": "Rejected",
+    }
+    return labels.get(normalized, normalized.replace("_", " ").title())
+
+
+def build_credit_application_submitted_admin_sms(
+    application_id: str,
+    user_label: str,
+    final_score: float,
+    creditworthiness: str,
+    suggested_credit_limit: float,
+) -> str:
+    app_short = str(application_id or "").strip()[:8].upper()
+    return (
+        "GFM Alert: New credit application submitted\n"
+        f"Application ID: {app_short}\n\n"
+        f"Applicant: {user_label}\n"
+        f"Score: {round(to_float(final_score), 2):.2f}\n"
+        f"Creditworthiness: {str(creditworthiness or 'unknown').title()}\n"
+        f"Suggested Limit: GH\u20b5{round(to_float(suggested_credit_limit), 2):.2f}"
+    )
+
+
+def notify_admins_credit_application_submitted_sms(
+    application_id: str,
+    user_id: str,
+    final_score: float,
+    creditworthiness: str,
+    suggested_credit_limit: float,
+) -> dict[str, int]:
+    phones = list_admin_alert_phones()
+    if not phones:
+        logger.info(f"No admin phones configured for credit-application SMS alert (application={application_id}).")
+        return {"attempted": 0, "queued": 0, "failed": 0}
+
+    user_label = resolve_user_display_name(user_id)
+    sms_message = build_credit_application_submitted_admin_sms(
+        application_id=application_id,
+        user_label=user_label,
+        final_score=final_score,
+        creditworthiness=creditworthiness,
+        suggested_credit_limit=suggested_credit_limit,
+    )
+    attempted = len(phones)
+    queued = 0
+    failed = 0
+    for phone in phones:
+        try:
+            dispatch_sms_message(phone, sms_message, log_tag="ADMIN_CREDIT_APP_DEV_ONLY")
+            queued += 1
+        except Exception as exc:
+            failed += 1
+            logger.error(
+                f"Could not dispatch admin credit-application SMS to {phone} for application {application_id}: {exc}"
+            )
+    return {"attempted": attempted, "queued": queued, "failed": failed}
+
+
+def build_credit_status_update_user_sms(
+    application_id: str,
+    status: str,
+    approved_credit_limit: Optional[float] = None,
+    review_note: Optional[str] = None,
+) -> str:
+    status_label = format_credit_application_status(status)
+    app_short = str(application_id or "").strip()[:8].upper()
+    lines = [
+        "GrowForMe Credit Update",
+        f"Application ID: {app_short}",
+        "",
+        f"Status: {status_label}",
+    ]
+    if normalize_credit_application_status(status) == "approved" and approved_credit_limit is not None:
+        lines.append(f"Approved Limit: GH\u20b5{round(to_float(approved_credit_limit), 2):.2f}")
+    clean_note = re.sub(r"\s+", " ", (review_note or "").strip())
+    if clean_note:
+        if len(clean_note) > 90:
+            clean_note = f"{clean_note[:87]}..."
+        lines.append(f"Note: {clean_note}")
+    lines.append("")
+    lines.append("Open the app to view full details.")
+    return "\n".join(lines)
+
+
+def notify_user_credit_status_update_sms(
+    sb: Client,
+    user_id: str,
+    application_id: str,
+    status: str,
+    approved_credit_limit: Optional[float] = None,
+    review_note: Optional[str] = None,
+) -> dict[str, Any]:
+    customer_phone = resolve_user_phone_for_notifications(sb, user_id)
+    if not customer_phone:
+        return {"sent": False, "reason": "phone_not_found", "phone_masked": None}
+
+    phone_masked = mask_phone(customer_phone)
+    sms_message = build_credit_status_update_user_sms(
+        application_id=application_id,
+        status=status,
+        approved_credit_limit=approved_credit_limit,
+        review_note=review_note,
+    )
+    try:
+        dispatch_sms_message(customer_phone, sms_message, log_tag="CREDIT_STATUS_USER_ALERT")
+        return {
+            "sent": True,
+            "reason": "queued" if OTP_SMS_ASYNC else "sent",
+            "phone_masked": phone_masked,
+        }
+    except Exception as exc:
+        return {"sent": False, "reason": f"sms_send_failed: {exc}", "phone_masked": phone_masked}
 
 
 def fetch_auth_user_profile(user_id: str) -> Optional[dict[str, Any]]:
@@ -1117,6 +1243,23 @@ class AdminOrderStatusUpdatePayload(BaseModel):
     estimated_delivery_at: Optional[str] = None
     delivery_address: Optional[str] = Field(default=None, max_length=400)
     payment_status: Optional[str] = Field(default=None, max_length=80)
+
+
+class ConsignmentCreatePayload(BaseModel):
+    userId: str
+    product_category: str = Field(min_length=2, max_length=80)
+    product_name: Optional[str] = Field(default=None, max_length=180)
+    quantity: float = Field(gt=0)
+    unit: str = Field(min_length=1, max_length=40)
+    expected_price: float = Field(ge=0)
+
+
+class AdminConsignmentApprovePayload(BaseModel):
+    approved_deal_id: Optional[str] = Field(default=None, max_length=120)
+
+
+class AdminConsignmentRejectPayload(BaseModel):
+    reason: str = Field(min_length=3, max_length=500)
 
 
 class AggregateDealJoinPayload(BaseModel):
@@ -2197,6 +2340,227 @@ def fetch_all_auth_user_ids() -> list[str]:
     return deduped
 
 
+def fetch_all_auth_users() -> list[dict[str, Any]]:
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase service role credentials are not configured.")
+
+    headers = {
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+    }
+    page = 1
+    per_page = 200
+    users: list[dict[str, Any]] = []
+
+    while True:
+        response = httpx.get(
+            f"{SUPABASE_URL.rstrip('/')}/auth/v1/admin/users",
+            headers=headers,
+            params={"page": page, "per_page": per_page},
+            timeout=20.0,
+        )
+        if response.status_code >= 300:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Could not list auth users from Supabase (status {response.status_code}).",
+            )
+
+        body = response.json()
+        batch = body.get("users") if isinstance(body, dict) else []
+        if not isinstance(batch, list):
+            batch = []
+        users.extend([row for row in batch if isinstance(row, dict) and row.get("id")])
+
+        if len(batch) < per_page:
+            break
+        page += 1
+
+    deduped: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for user in users:
+        user_id = str(user.get("id") or "").strip()
+        if not user_id or user_id in seen:
+            continue
+        seen.add(user_id)
+        deduped.append(user)
+    return deduped
+
+
+def normalize_operations_credit_status(
+    account_snapshot: Optional[dict[str, Any]],
+    latest_application_status: Optional[str],
+) -> str:
+    snapshot = account_snapshot or {}
+    if is_credit_account_spendable(snapshot.get("status")):
+        return "approved"
+
+    status_hint = normalize_credit_application_status(latest_application_status or snapshot.get("status"))
+    if status_hint in {"submitted", "under_review", "pending_documents"}:
+        return "submitted"
+    if status_hint == "rejected":
+        return "rejected"
+    return "not_applied"
+
+
+def normalize_consignment_status(value: Optional[str]) -> str:
+    cleaned = str(value or "").strip().lower()
+    return cleaned if cleaned in CONSIGNMENT_STATUSES else "pending"
+
+
+def normalize_consignment_unit(value: Optional[str]) -> str:
+    cleaned = str(value or "").strip().lower()
+    if not cleaned:
+        return "unit"
+    aliases = {
+        "bag": "bags",
+        "bags": "bags",
+        "tonne": "tonnes",
+        "tonnes": "tonnes",
+        "unit": "units",
+        "units": "units",
+    }
+    return aliases.get(cleaned, cleaned)
+
+
+def build_consignment_item_label(product_name: Optional[str], product_category: Optional[str]) -> str:
+    name = str(product_name or "").strip()
+    if name:
+        return name
+    category = str(product_category or "").strip()
+    return category.title() if category else "your item"
+
+
+def build_consignment_submitted_admin_sms(
+    consignment_id: str,
+    user_label: str,
+    quantity: float,
+    unit: str,
+    product_label: str,
+    expected_price: float,
+) -> str:
+    safe_id = str(consignment_id or "").strip()[:8].upper()
+    return (
+        "GFM Alert: New consignment request\n"
+        f"Listing ID: {safe_id}\n\n"
+        f"Farmer: {user_label}\n"
+        f"Item: {product_label}\n"
+        f"Quantity: {round(to_float(quantity), 2)} {unit}\n"
+        f"Expected Price: GH\u20b5{round(to_float(expected_price), 2):.2f}"
+    )
+
+
+def notify_admins_consignment_submitted_sms(
+    consignment_id: str,
+    user_id: str,
+    quantity: float,
+    unit: str,
+    product_label: str,
+    expected_price: float,
+) -> dict[str, int]:
+    phones = list_admin_alert_phones()
+    if not phones:
+        logger.info(f"No admin phones configured for consignment SMS alert (consignment={consignment_id}).")
+        return {"attempted": 0, "queued": 0, "failed": 0}
+
+    user_label = resolve_user_display_name(user_id)
+    sms_message = build_consignment_submitted_admin_sms(
+        consignment_id=consignment_id,
+        user_label=user_label,
+        quantity=quantity,
+        unit=unit,
+        product_label=product_label,
+        expected_price=expected_price,
+    )
+    attempted = len(phones)
+    queued = 0
+    failed = 0
+    for phone in phones:
+        try:
+            dispatch_sms_message(phone, sms_message, log_tag="ADMIN_CONSIGNMENT_DEV_ONLY")
+            queued += 1
+        except Exception as exc:
+            failed += 1
+            logger.error(f"Could not dispatch admin consignment SMS to {phone} for consignment {consignment_id}: {exc}")
+    return {"attempted": attempted, "queued": queued, "failed": failed}
+
+
+def build_consignment_status_user_sms(
+    consignment_id: str,
+    status: str,
+    product_label: str,
+    reason: Optional[str] = None,
+) -> str:
+    safe_id = str(consignment_id or "").strip()[:8].upper()
+    normalized_status = normalize_consignment_status(status)
+    lines = [
+        "GrowForMe Consignment Update",
+        f"Listing ID: {safe_id}",
+        "",
+        f"Item: {product_label}",
+        f"Status: {normalized_status.title()}",
+    ]
+    clean_reason = re.sub(r"\s+", " ", (reason or "").strip())
+    if clean_reason:
+        if len(clean_reason) > 90:
+            clean_reason = f"{clean_reason[:87]}..."
+        lines.append(f"Reason: {clean_reason}")
+    lines.append("")
+    lines.append("Open the app to view details.")
+    return "\n".join(lines)
+
+
+def notify_user_consignment_status_sms(
+    sb: Client,
+    user_id: str,
+    consignment_id: str,
+    status: str,
+    product_label: str,
+    reason: Optional[str] = None,
+) -> dict[str, Any]:
+    customer_phone = resolve_user_phone_for_notifications(sb, user_id)
+    if not customer_phone:
+        return {"sent": False, "reason": "phone_not_found", "phone_masked": None}
+
+    phone_masked = mask_phone(customer_phone)
+    sms_message = build_consignment_status_user_sms(
+        consignment_id=consignment_id,
+        status=status,
+        product_label=product_label,
+        reason=reason,
+    )
+    try:
+        dispatch_sms_message(customer_phone, sms_message, log_tag="CONSIGNMENT_STATUS_USER_ALERT")
+        return {"sent": True, "reason": "queued" if OTP_SMS_ASYNC else "sent", "phone_masked": phone_masked}
+    except Exception as exc:
+        return {"sent": False, "reason": f"sms_send_failed: {exc}", "phone_masked": phone_masked}
+
+
+def build_admin_consignment_response(
+    row: dict[str, Any],
+    *,
+    farmer_name: Optional[str] = None,
+    farmer_phone: Optional[str] = None,
+) -> dict[str, Any]:
+    user_id = str(row.get("user_id") or "").strip()
+    status = normalize_consignment_status(row.get("status"))
+    return {
+        "id": str(row.get("id") or ""),
+        "user_id": user_id,
+        "farmer_name": farmer_name or "Farmer",
+        "farmer_phone": farmer_phone,
+        "product_category": str(row.get("product_category") or "").strip() or "other",
+        "product_name": str(row.get("product_name") or "").strip() or None,
+        "quantity": round(to_float(row.get("quantity")), 2),
+        "unit": normalize_consignment_unit(row.get("unit")),
+        "expected_price": round(to_float(row.get("expected_price")), 2),
+        "status": status,
+        "rejection_reason": str(row.get("rejection_reason") or "").strip() or None,
+        "approved_deal_id": str(row.get("approved_deal_id") or "").strip() or None,
+        "created_at": row.get("created_at"),
+        "reviewed_at": row.get("reviewed_at"),
+    }
+
+
 def upsert_auto_approved_credit_for_user(
     sb: Client,
     user_id: str,
@@ -2302,7 +2666,7 @@ def write_order_tracking_records(
     payment_status: str = "paid",
 ):
     now_iso = now_utc().isoformat()
-    estimated_delivery = (now_utc() + timedelta(days=DEFAULT_DELIVERY_WINDOW_DAYS)).isoformat()
+    estimated_delivery = (now_utc() + timedelta(days=DEFAULT_DELIVERY_WINDOW_DAYS_RUNTIME)).isoformat()
     tracking_row = {
         "order_id": order_id,
         "user_id": user_id,
@@ -4438,6 +4802,523 @@ async def admin_list_notifications(
     }
 
 
+@app.get("/api/admin/operations/customers")
+async def admin_operations_customers(
+    authorization: Optional[str] = Header(default=None),
+    limit: int = 500,
+    offset: int = 0,
+    query: Optional[str] = None,
+):
+    require_admin_session(authorization)
+    sb = ensure_service_supabase()
+    safe_limit = max(1, min(limit, 2000))
+    safe_offset = max(0, offset)
+    needle = (query or "").strip().lower()
+
+    auth_users = fetch_all_auth_users()
+    rows_by_user: dict[str, dict[str, Any]] = {}
+
+    def ensure_user_row(user_id: str) -> dict[str, Any]:
+        row = rows_by_user.get(user_id)
+        if row:
+            return row
+        fallback_name = f"User {user_id[:8]}" if user_id else "Unknown User"
+        row = {
+            "id": user_id,
+            "full_name": fallback_name,
+            "email": "",
+            "phone": None,
+            "credit_status": "not_applied",
+            "credit_limit": 0.0,
+            "available_credit": 0.0,
+            "total_orders": 0,
+            "total_spent": 0.0,
+            "joined_at": now_utc().isoformat(),
+            "_latest_credit_status": None,
+            "_account_snapshot": {},
+        }
+        rows_by_user[user_id] = row
+        return row
+
+    for user in auth_users:
+        user_id = str(user.get("id") or "").strip()
+        if not user_id:
+            continue
+        email = str(user.get("email") or "").strip().lower()
+        metadata = user.get("user_metadata") if isinstance(user.get("user_metadata"), dict) else {}
+        full_name = (
+            str(metadata.get("name") or metadata.get("full_name") or metadata.get("display_name") or "").strip()
+            or (email.split("@", 1)[0] if email and "@" in email else "")
+            or f"User {user_id[:8]}"
+        )
+        phone = str(user.get("phone") or metadata.get("phone") or "").strip() or None
+        joined_at = str(user.get("created_at") or "").strip() or now_utc().isoformat()
+        row = ensure_user_row(user_id)
+        row["full_name"] = full_name
+        row["email"] = email
+        row["phone"] = phone
+        row["joined_at"] = joined_at
+
+    if supports_table(sb, "user_phone_verifications"):
+        try:
+            try:
+                phone_rows = fetch_table_rows(
+                    sb,
+                    "user_phone_verifications",
+                    "user_id,phone,created_at",
+                    limit=20000,
+                    order_by="created_at",
+                    desc=True,
+                )
+            except Exception:
+                phone_rows = fetch_table_rows(
+                    sb,
+                    "user_phone_verifications",
+                    "user_id,phone,updated_at",
+                    limit=20000,
+                    order_by="updated_at",
+                    desc=True,
+                )
+            for phone_row in phone_rows:
+                user_id = str(phone_row.get("user_id") or "").strip()
+                if not user_id:
+                    continue
+                row = ensure_user_row(user_id)
+                phone = str(phone_row.get("phone") or "").strip()
+                if phone and not row.get("phone"):
+                    row["phone"] = phone
+                created_at = str(phone_row.get("created_at") or phone_row.get("updated_at") or "").strip()
+                if created_at and parse_admin_activity_timestamp(created_at) < parse_admin_activity_timestamp(row.get("joined_at")):
+                    row["joined_at"] = created_at
+        except Exception as exc:
+            logger.warning(f"Could not enrich operations customers with verification phone data: {exc}")
+
+    if supports_table(sb, "orders"):
+        try:
+            order_rows = fetch_table_rows(
+                sb,
+                "orders",
+                "user_id,total_amount,created_at",
+                limit=30000,
+                order_by="created_at",
+                desc=True,
+            )
+            for order in order_rows:
+                user_id = str(order.get("user_id") or "").strip()
+                if not user_id:
+                    continue
+                row = ensure_user_row(user_id)
+                row["total_orders"] = int(row.get("total_orders") or 0) + 1
+                row["total_spent"] = round(to_float(row.get("total_spent")) + to_float(order.get("total_amount")), 2)
+                created_at = str(order.get("created_at") or "").strip()
+                if created_at and parse_admin_activity_timestamp(created_at) < parse_admin_activity_timestamp(row.get("joined_at")):
+                    row["joined_at"] = created_at
+        except Exception as exc:
+            logger.warning(f"Could not aggregate operations customer order metrics: {exc}")
+
+    if supports_credit_application_tables(sb):
+        try:
+            app_rows = fetch_table_rows(
+                sb,
+                "credit_applications",
+                "user_id,status,updated_at,created_at",
+                limit=20000,
+                order_by="updated_at",
+                desc=True,
+            )
+            seen_latest_status: set[str] = set()
+            for app in app_rows:
+                user_id = str(app.get("user_id") or "").strip()
+                if not user_id:
+                    continue
+                row = ensure_user_row(user_id)
+                if user_id not in seen_latest_status:
+                    row["_latest_credit_status"] = normalize_credit_application_status(app.get("status"))
+                    seen_latest_status.add(user_id)
+        except Exception as exc:
+            logger.warning(f"Could not aggregate operations customer credit applications: {exc}")
+
+    if supports_table(sb, "credit_accounts"):
+        try:
+            account_rows = fetch_table_rows(
+                sb,
+                "credit_accounts",
+                (
+                    "user_id,status,assigned_credit_limit,available_credit,consumed_credit,"
+                    "assigned_limit,outstanding_balance,updated_at"
+                ),
+                limit=20000,
+                order_by="updated_at",
+                desc=True,
+            )
+            seen_accounts: set[str] = set()
+            for account in account_rows:
+                user_id = str(account.get("user_id") or "").strip()
+                if not user_id or user_id in seen_accounts:
+                    continue
+                seen_accounts.add(user_id)
+                row = ensure_user_row(user_id)
+                snapshot = normalize_credit_account_snapshot(account)
+                row["_account_snapshot"] = snapshot
+                row["credit_limit"] = round(to_float(snapshot.get("assigned_credit_limit")), 2)
+                row["available_credit"] = round(to_float(snapshot.get("available_credit")), 2)
+                row["credit_status"] = normalize_operations_credit_status(
+                    snapshot,
+                    row.get("_latest_credit_status"),
+                )
+        except Exception as exc:
+            logger.warning(f"Could not aggregate operations customer credit accounts: {exc}")
+
+    customers = []
+    for row in rows_by_user.values():
+        row["credit_status"] = normalize_operations_credit_status(
+            row.get("_account_snapshot"),
+            row.get("_latest_credit_status"),
+        )
+        customers.append(
+            {
+                "id": row["id"],
+                "full_name": row["full_name"],
+                "email": row["email"],
+                "phone": row["phone"],
+                "credit_status": row["credit_status"],
+                "credit_limit": round(to_float(row["credit_limit"]), 2),
+                "available_credit": round(to_float(row["available_credit"]), 2),
+                "total_orders": int(row["total_orders"]),
+                "total_spent": round(to_float(row["total_spent"]), 2),
+                "joined_at": row["joined_at"],
+            }
+        )
+
+    customers.sort(key=lambda item: parse_admin_activity_timestamp(item.get("joined_at")), reverse=True)
+    summary = {
+        "total_users": len(customers),
+        "active_credit_lines": sum(1 for customer in customers if customer["credit_status"] == "approved"),
+        "total_orders": sum(int(customer["total_orders"]) for customer in customers),
+    }
+
+    if needle:
+        filtered = []
+        for customer in customers:
+            haystack = " ".join(
+                [
+                    str(customer.get("full_name") or ""),
+                    str(customer.get("email") or ""),
+                    str(customer.get("phone") or ""),
+                ]
+            ).lower()
+            if needle in haystack:
+                filtered.append(customer)
+    else:
+        filtered = customers
+
+    page = filtered[safe_offset : safe_offset + safe_limit]
+    return {
+        "customers": page,
+        "total": len(filtered),
+        "summary": summary,
+        "limit": safe_limit,
+        "offset": safe_offset,
+    }
+
+
+@app.get("/api/admin/operations/consignments")
+async def admin_operations_consignments(
+    authorization: Optional[str] = Header(default=None),
+    limit: int = 200,
+    offset: int = 0,
+    status: Optional[str] = None,
+):
+    require_admin_session(authorization)
+    sb = ensure_service_supabase()
+    safe_limit = max(1, min(limit, 1000))
+    safe_offset = max(0, offset)
+    status_filter = normalize_consignment_status(status) if (status or "").strip() else None
+
+    if not supports_table(sb, "consignment_requests"):
+        return {
+            "consignments": [],
+            "summary": {"pending": 0, "approved_this_week": 0, "total": 0},
+            "total": 0,
+            "limit": safe_limit,
+            "offset": safe_offset,
+        }
+
+    query = sb.table("consignment_requests").select("*").order("created_at", desc=True)
+    if status_filter:
+        query = query.eq("status", status_filter)
+    rows = query.range(safe_offset, safe_offset + safe_limit - 1).execute().data or []
+
+    summary_rows = fetch_table_rows(
+        sb,
+        "consignment_requests",
+        "id,status,reviewed_at",
+        limit=5000,
+        order_by="created_at",
+        desc=True,
+    )
+    week_ago = now_utc() - timedelta(days=7)
+    pending = 0
+    approved_this_week = 0
+    for row in summary_rows:
+        status_value = normalize_consignment_status(row.get("status"))
+        if status_value == "pending":
+            pending += 1
+        if status_value == "approved":
+            reviewed_at = parse_admin_activity_timestamp(row.get("reviewed_at"))
+            if reviewed_at >= week_ago:
+                approved_this_week += 1
+
+    user_name_cache: dict[str, str] = {}
+    user_phone_cache: dict[str, Optional[str]] = {}
+    consignments: list[dict[str, Any]] = []
+    for row in rows:
+        user_id = str(row.get("user_id") or "").strip()
+        raw_name = str(row.get("farmer_name") or "").strip()
+        raw_phone = str(row.get("farmer_phone") or "").strip()
+        if user_id and user_id not in user_name_cache:
+            user_name_cache[user_id] = resolve_user_display_name(user_id)
+        if user_id and user_id not in user_phone_cache:
+            user_phone_cache[user_id] = resolve_user_phone_for_notifications(sb, user_id)
+        consignments.append(
+            build_admin_consignment_response(
+                row,
+                farmer_name=raw_name or user_name_cache.get(user_id) or "Farmer",
+                farmer_phone=raw_phone or user_phone_cache.get(user_id),
+            )
+        )
+
+    return {
+        "consignments": consignments,
+        "summary": {
+            "pending": pending,
+            "approved_this_week": approved_this_week,
+            "total": len(summary_rows),
+        },
+        "total": len(summary_rows),
+        "limit": safe_limit,
+        "offset": safe_offset,
+    }
+
+
+@app.post("/api/admin/operations/consignments/{consignment_id}/approve")
+async def admin_operations_approve_consignment(
+    consignment_id: str,
+    payload: Optional[AdminConsignmentApprovePayload] = None,
+    authorization: Optional[str] = Header(default=None),
+):
+    admin = require_admin_session(authorization)
+    sb = ensure_service_supabase()
+    if not supports_table(sb, "consignment_requests"):
+        raise HTTPException(status_code=503, detail="Consignment queue is not configured.")
+
+    safe_id = consignment_id.strip()
+    if not safe_id:
+        raise HTTPException(status_code=400, detail="Missing consignment id.")
+
+    lookup = sb.table("consignment_requests").select("*").eq("id", safe_id).limit(1).execute().data or []
+    if not lookup:
+        raise HTTPException(status_code=404, detail="Consignment request not found.")
+    row = lookup[0]
+    user_id = str(row.get("user_id") or "").strip()
+    product_label = build_consignment_item_label(row.get("product_name"), row.get("product_category"))
+    now_iso = now_utc().isoformat()
+    approved_deal_id = str(payload.approved_deal_id if payload else "").strip() or None
+
+    update_payload: dict[str, Any] = {
+        "status": "approved",
+        "rejection_reason": None,
+        "reviewed_at": now_iso,
+        "reviewer": admin["email"],
+        "updated_at": now_iso,
+    }
+    if approved_deal_id:
+        update_payload["approved_deal_id"] = approved_deal_id
+
+    sb.table("consignment_requests").update(update_payload).eq("id", safe_id).execute()
+    updated = sb.table("consignment_requests").select("*").eq("id", safe_id).limit(1).execute().data[0]
+
+    sms_alert = notify_user_consignment_status_sms(
+        sb=sb,
+        user_id=user_id,
+        consignment_id=safe_id,
+        status="approved",
+        product_label=product_label,
+    )
+    audit_log(
+        event_type="ADMIN_CONSIGNMENT_APPROVED",
+        user_id=admin["email"],
+        description=f"Consignment {safe_id} approved.",
+        metadata={
+            "consignment_id": safe_id,
+            "user_id": user_id,
+            "approved_deal_id": approved_deal_id,
+            "sms_sent": sms_alert["sent"],
+            "sms_reason": sms_alert["reason"],
+        },
+    )
+
+    return {
+        "status": "approved",
+        "consignment": build_admin_consignment_response(
+            updated,
+            farmer_name=resolve_user_display_name(user_id),
+            farmer_phone=resolve_user_phone_for_notifications(sb, user_id),
+        ),
+        "user_sms_alert": sms_alert,
+        "admin": {"name": admin["name"], "email": admin["email"]},
+    }
+
+
+@app.post("/api/admin/operations/consignments/{consignment_id}/reject")
+async def admin_operations_reject_consignment(
+    consignment_id: str,
+    payload: AdminConsignmentRejectPayload,
+    authorization: Optional[str] = Header(default=None),
+):
+    admin = require_admin_session(authorization)
+    sb = ensure_service_supabase()
+    if not supports_table(sb, "consignment_requests"):
+        raise HTTPException(status_code=503, detail="Consignment queue is not configured.")
+
+    safe_id = consignment_id.strip()
+    if not safe_id:
+        raise HTTPException(status_code=400, detail="Missing consignment id.")
+
+    lookup = sb.table("consignment_requests").select("*").eq("id", safe_id).limit(1).execute().data or []
+    if not lookup:
+        raise HTTPException(status_code=404, detail="Consignment request not found.")
+    row = lookup[0]
+    user_id = str(row.get("user_id") or "").strip()
+    product_label = build_consignment_item_label(row.get("product_name"), row.get("product_category"))
+    reason = payload.reason.strip()
+    now_iso = now_utc().isoformat()
+
+    update_payload: dict[str, Any] = {
+        "status": "rejected",
+        "rejection_reason": reason,
+        "approved_deal_id": None,
+        "reviewed_at": now_iso,
+        "reviewer": admin["email"],
+        "updated_at": now_iso,
+    }
+    sb.table("consignment_requests").update(update_payload).eq("id", safe_id).execute()
+    updated = sb.table("consignment_requests").select("*").eq("id", safe_id).limit(1).execute().data[0]
+
+    sms_alert = notify_user_consignment_status_sms(
+        sb=sb,
+        user_id=user_id,
+        consignment_id=safe_id,
+        status="rejected",
+        product_label=product_label,
+        reason=reason,
+    )
+    audit_log(
+        event_type="ADMIN_CONSIGNMENT_REJECTED",
+        user_id=admin["email"],
+        description=f"Consignment {safe_id} rejected.",
+        metadata={
+            "consignment_id": safe_id,
+            "user_id": user_id,
+            "reason": reason,
+            "sms_sent": sms_alert["sent"],
+            "sms_reason": sms_alert["reason"],
+        },
+    )
+
+    return {
+        "status": "rejected",
+        "consignment": build_admin_consignment_response(
+            updated,
+            farmer_name=resolve_user_display_name(user_id),
+            farmer_phone=resolve_user_phone_for_notifications(sb, user_id),
+        ),
+        "user_sms_alert": sms_alert,
+        "admin": {"name": admin["name"], "email": admin["email"]},
+    }
+
+
+@app.post("/api/consignments")
+async def create_consignment_request(payload: ConsignmentCreatePayload):
+    sb = ensure_service_supabase()
+    if not supports_table(sb, "consignment_requests"):
+        raise HTTPException(status_code=503, detail="Consignment queue is not configured.")
+
+    user_id = payload.userId.strip()
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Missing userId in request body.")
+
+    now_iso = now_utc().isoformat()
+    normalized_unit = normalize_consignment_unit(payload.unit)
+    product_category = str(payload.product_category or "").strip().lower()
+    if not product_category:
+        raise HTTPException(status_code=400, detail="product_category is required.")
+
+    product_name = str(payload.product_name or "").strip() or None
+    farmer_phone = resolve_user_phone_for_notifications(sb, user_id)
+    farmer_name = resolve_user_display_name(user_id)
+
+    base_row = {
+        "user_id": user_id,
+        "product_category": product_category,
+        "product_name": product_name,
+        "quantity": round(to_float(payload.quantity), 2),
+        "unit": normalized_unit,
+        "expected_price": round(to_float(payload.expected_price), 2),
+        "status": "pending",
+        "created_at": now_iso,
+        "updated_at": now_iso,
+    }
+    insert_row = {**base_row, "farmer_phone": farmer_phone, "farmer_name": farmer_name}
+    created: Optional[dict[str, Any]] = None
+    try:
+        response = sb.table("consignment_requests").insert(insert_row).execute()
+        created = response.data[0] if response.data else None
+    except Exception:
+        response = sb.table("consignment_requests").insert(base_row).execute()
+        created = response.data[0] if response.data else None
+
+    if not created:
+        raise HTTPException(status_code=500, detail="Could not create consignment request.")
+
+    consignment_id = str(created.get("id") or "")
+    product_label = build_consignment_item_label(product_name, product_category)
+    admin_sms_alert = notify_admins_consignment_submitted_sms(
+        consignment_id=consignment_id,
+        user_id=user_id,
+        quantity=payload.quantity,
+        unit=normalized_unit,
+        product_label=product_label,
+        expected_price=payload.expected_price,
+    )
+    audit_log(
+        event_type="CONSIGNMENT_REQUEST_SUBMITTED",
+        user_id=user_id,
+        description=f"Consignment request {consignment_id} submitted.",
+        metadata={
+            "consignment_id": consignment_id,
+            "product_category": product_category,
+            "product_name": product_name,
+            "quantity": round(to_float(payload.quantity), 2),
+            "unit": normalized_unit,
+            "expected_price": round(to_float(payload.expected_price), 2),
+            "admin_alert_attempted": admin_sms_alert["attempted"],
+            "admin_alert_queued": admin_sms_alert["queued"],
+            "admin_alert_failed": admin_sms_alert["failed"],
+        },
+    )
+
+    return {
+        "status": "submitted",
+        "consignment": build_admin_consignment_response(
+            created,
+            farmer_name=farmer_name,
+            farmer_phone=farmer_phone,
+        ),
+        "admin_sms_alert": admin_sms_alert,
+    }
+
+
 @app.get("/api/admin/system-summary")
 async def admin_system_summary(authorization: Optional[str] = Header(default=None)):
     admin = require_admin_session(authorization)
@@ -4881,7 +5762,7 @@ async def join_aggregate_bulk_deal(deal_id: str, payload: AggregateDealJoinPaylo
     now = now_utc()
     expires_at = now + timedelta(minutes=BULK_PAYMENT_HOLD_MINUTES)
     reference = generate_payment_reference()
-    callback_url = (payload.callback_url or PAYSTACK_CALLBACK_URL or "").strip() or None
+    callback_url = (payload.callback_url or PAYSTACK_CALLBACK_URL_RUNTIME or "").strip() or None
     provider_payload_meta = {
         "flow": "aggregate_bulk",
         "deal_id": safe_id,
@@ -5620,6 +6501,41 @@ async def create_credit_application(payload: CreditApplicationCreatePayload):
         },
     )
 
+    admin_sms_alert = notify_admins_credit_application_submitted_sms(
+        application_id=application_id,
+        user_id=user_id,
+        final_score=score_result["final_score"],
+        creditworthiness=str(score_result["creditworthiness"] or ""),
+        suggested_credit_limit=score_result["suggested_credit_limit"],
+    )
+    audit_log(
+        event_type="ADMIN_CREDIT_APPLICATION_PENDING_ALERT",
+        user_id=user_id,
+        description=f"New credit application {application_id} is pending review.",
+        metadata={
+            "application_id": application_id,
+            "status": "submitted",
+            "final_score": score_result["final_score"],
+            "creditworthiness": score_result["creditworthiness"],
+            "suggested_credit_limit": score_result["suggested_credit_limit"],
+        },
+    )
+    audit_log(
+        event_type="ADMIN_CREDIT_APPLICATION_SMS_ALERTED",
+        user_id=user_id,
+        description=(
+            f"Admin SMS alerts queued for credit application {application_id}: "
+            f"{admin_sms_alert['queued']}/{admin_sms_alert['attempted']} "
+            f"(failed={admin_sms_alert['failed']})."
+        ),
+        metadata={
+            "application_id": application_id,
+            "attempted": admin_sms_alert["attempted"],
+            "queued": admin_sms_alert["queued"],
+            "failed": admin_sms_alert["failed"],
+        },
+    )
+
     return {
         "status": "submitted",
         "application_id": application_id,
@@ -5627,6 +6543,7 @@ async def create_credit_application(payload: CreditApplicationCreatePayload):
         "creditworthiness": score_result["creditworthiness"],
         "suggested_credit_limit": score_result["suggested_credit_limit"],
         "next_step": "Upload supporting documents and wait for admin review.",
+        "admin_sms_alert": admin_sms_alert,
     }
 
 
@@ -6185,10 +7102,36 @@ async def admin_decide_credit_application(
         },
     )
 
+    user_sms_alert = notify_user_credit_status_update_sms(
+        sb=sb,
+        user_id=user_id,
+        application_id=application_id,
+        status=requested_status,
+        approved_credit_limit=approved_limit,
+        review_note=review_note,
+    )
+    audit_log(
+        event_type="CREDIT_APPLICATION_USER_SMS_ALERT",
+        user_id=user_id,
+        description=(
+            f"User SMS alert for credit application {application_id}: "
+            f"{'sent' if user_sms_alert['sent'] else 'not_sent'} ({user_sms_alert['reason']})."
+        ),
+        metadata={
+            "application_id": application_id,
+            "status": requested_status,
+            "reviewer": reviewer,
+            "sms_sent": user_sms_alert["sent"],
+            "sms_reason": user_sms_alert["reason"],
+            "phone_masked": user_sms_alert["phone_masked"],
+        },
+    )
+
     return {
         "status": requested_status,
         "application": updated_application,
         "credit_account": updated_account,
+        "user_sms_alert": user_sms_alert,
         "admin": {"name": admin["name"], "email": admin["email"]},
     }
 
@@ -6684,8 +7627,8 @@ async def distribution_order_status_webhook(
     payload: DistributionStatusWebhookPayload,
     x_distribution_token: Optional[str] = Header(default=None),
 ):
-    if DISTRIBUTION_WEBHOOK_TOKEN:
-        if x_distribution_token != DISTRIBUTION_WEBHOOK_TOKEN:
+    if DISTRIBUTION_WEBHOOK_TOKEN_RUNTIME:
+        if x_distribution_token != DISTRIBUTION_WEBHOOK_TOKEN_RUNTIME:
             raise HTTPException(status_code=401, detail="Invalid distribution webhook token.")
 
     sb = ensure_supabase()
@@ -6839,7 +7782,7 @@ async def paystack_initialize(payload: PaystackInitializePayload):
             "credit_applied": credit_applied,
         }
 
-    callback_url = (payload.callback_url or PAYSTACK_CALLBACK_URL or "").strip() or None
+    callback_url = (payload.callback_url or PAYSTACK_CALLBACK_URL_RUNTIME or "").strip() or None
     reference = generate_payment_reference()
 
     try:
