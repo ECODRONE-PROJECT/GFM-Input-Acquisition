@@ -8,7 +8,9 @@ import re
 import secrets
 import threading
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, List, Optional
+from urllib.parse import quote
 from uuid import uuid4
 
 import httpx
@@ -21,6 +23,8 @@ from supabase import Client, create_client
 
 APP_DIR = os.path.dirname(__file__)
 BACKEND_DIR = os.path.abspath(os.path.join(APP_DIR, ".."))
+PROJECT_ROOT_DIR = os.path.abspath(os.path.join(BACKEND_DIR, ".."))
+INVENTORY_ASSETS_DIR = os.path.join(PROJECT_ROOT_DIR, "inventory")
 load_dotenv(os.path.join(BACKEND_DIR, ".env"))
 
 # ─── Python Console Logger ────────────────────────────────────────────────────
@@ -205,6 +209,26 @@ ORDER_STATUS_LABELS = {
 }
 ORDER_REFUNDABLE_STATUSES = {"cancelled", "failed"}
 ORDER_NON_REVENUE_STATUSES = {"cancelled", "failed"}
+INVENTORY_IMAGE_REF_PREFIX = "inventory://"
+INVENTORY_IMAGE_ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
+INVENTORY_DEFAULT_PRICE_BY_TYPE = {
+    "SEED": 120.0,
+    "FERTILIZER": 300.0,
+    "CHEMICAL": 95.0,
+    "TOOL": 180.0,
+    "IRRIGATION": 450.0,
+    "LIVESTOCK": 220.0,
+    "PPE": 60.0,
+}
+INVENTORY_DEFAULT_STOCK_BY_TYPE = {
+    "SEED": 120,
+    "FERTILIZER": 60,
+    "CHEMICAL": 90,
+    "TOOL": 45,
+    "IRRIGATION": 25,
+    "LIVESTOCK": 35,
+    "PPE": 80,
+}
 DEFAULT_DELIVERY_WINDOW_DAYS = int(os.getenv("DEFAULT_DELIVERY_WINDOW_DAYS", "2"))
 DEFAULT_DELIVERY_WINDOW_DAYS_RUNTIME = DEFAULT_DELIVERY_WINDOW_DAYS
 CREDIT_DOC_UPLOAD_DIR = os.path.join(BACKEND_DIR, "uploads", "credit_docs")
@@ -938,6 +962,186 @@ def build_inventory_id(name: str, item_type: str) -> str:
     return f"{prefix}-{slug[:18]}-{secrets.token_hex(2)}"
 
 
+def humanize_inventory_token(value: str) -> str:
+    cleaned = re.sub(r"[_-]+", " ", (value or "").strip())
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    if not cleaned:
+        return ""
+    parts: list[str] = []
+    for token in cleaned.split(" "):
+        if token.isupper():
+            parts.append(token)
+            continue
+        if re.search(r"\d", token):
+            parts.append(token.upper() if token.isalpha() else token)
+            continue
+        parts.append(token.capitalize())
+    return " ".join(parts)
+
+
+def build_inventory_image_ref(filename: str) -> str:
+    return f"{INVENTORY_IMAGE_REF_PREFIX}{Path(filename).name}"
+
+
+def resolve_inventory_image_url(image_value: Optional[str], request: Optional[Request] = None) -> Optional[str]:
+    raw = str(image_value or "").strip()
+    if not raw:
+        return None
+    if not raw.startswith(INVENTORY_IMAGE_REF_PREFIX):
+        return raw
+
+    filename = raw[len(INVENTORY_IMAGE_REF_PREFIX) :].strip()
+    if not filename:
+        return None
+
+    relative_path = f"/api/inventory/assets/{quote(filename)}"
+    if request is not None:
+        return f"{str(request.base_url).rstrip('/')}{relative_path}"
+
+    public_base = (os.getenv("PUBLIC_BACKEND_BASE_URL") or "").strip().rstrip("/")
+    if public_base:
+        return f"{public_base}{relative_path}"
+    return relative_path
+
+
+def parse_inventory_asset_filename(filename: str) -> Optional[dict[str, Any]]:
+    stem = Path(filename).stem
+    parts = stem.split("_")
+    if len(parts) < 4:
+        return None
+
+    raw_id, raw_name, raw_type, raw_brand, *extra_parts = parts
+    item_id = re.sub(r"[^a-z0-9-]+", "-", raw_id.strip().lower()).strip("-")
+    if not item_id:
+        return None
+
+    normalized_name, normalized_type, _ = normalize_inventory_name_and_type(
+        humanize_inventory_token(raw_name),
+        raw_type,
+    )
+    brand = humanize_inventory_token(raw_brand) or "Grow For Me"
+
+    size: Optional[str] = None
+    weight: Optional[str] = None
+    for raw_part in extra_parts:
+        part = humanize_inventory_token(raw_part)
+        if not part:
+            continue
+        if weight is None and re.search(r"(kg|g|lb)$", raw_part.strip().lower()):
+            weight = part
+            continue
+        if size is None:
+            size = part
+        else:
+            size = f"{size}, {part}"
+
+    default_price = round(float(INVENTORY_DEFAULT_PRICE_BY_TYPE.get(normalized_type, 100.0)), 2)
+    default_stock = int(INVENTORY_DEFAULT_STOCK_BY_TYPE.get(normalized_type, 40))
+    return {
+        "id": item_id,
+        "name": normalized_name,
+        "type": normalized_type,
+        "brand": brand,
+        "size": size,
+        "weight": weight,
+        "price": default_price,
+        "stock": default_stock,
+        "location": "Main Warehouse",
+        "is_archived": False,
+        "imageUrl": build_inventory_image_ref(filename),
+    }
+
+
+def collect_inventory_seed_rows() -> list[dict[str, Any]]:
+    folder = Path(INVENTORY_ASSETS_DIR)
+    if not folder.exists() or not folder.is_dir():
+        return []
+
+    rows: list[dict[str, Any]] = []
+    for path in sorted(folder.iterdir(), key=lambda p: p.name.lower()):
+        if not path.is_file():
+            continue
+        if path.suffix.lower() not in INVENTORY_IMAGE_ALLOWED_EXTENSIONS:
+            continue
+        parsed = parse_inventory_asset_filename(path.name)
+        if parsed:
+            rows.append(parsed)
+    return rows
+
+
+def sync_catalog_with_inventory_folder(
+    sb: Client,
+    *,
+    overwrite_price: bool = False,
+    overwrite_stock: bool = False,
+    archive_missing: bool = False,
+) -> dict[str, Any]:
+    seed_rows = collect_inventory_seed_rows()
+    if not seed_rows:
+        return {"discovered": 0, "created": 0, "updated": 0, "archived": 0}
+
+    seed_by_id = {row["id"]: row for row in seed_rows}
+    seed_ids = list(seed_by_id.keys())
+
+    existing_rows = (
+        sb.table("catalog")
+        .select("*")
+        .in_("id", seed_ids)
+        .execute()
+        .data
+        or []
+    )
+    existing_by_id = {str(row.get("id")): row for row in existing_rows if row.get("id")}
+
+    created = 0
+    updated = 0
+    for item_id, seed in seed_by_id.items():
+        existing = existing_by_id.get(item_id)
+        if existing:
+            updates: dict[str, Any] = {
+                "name": seed["name"],
+                "type": seed["type"],
+                "brand": seed["brand"],
+                "size": seed["size"],
+                "weight": seed["weight"],
+                "location": seed["location"],
+                "imageUrl": seed["imageUrl"],
+                "is_archived": False,
+            }
+            existing_price = round(to_float(existing.get("price")), 2)
+            existing_stock = existing.get("stock")
+            if overwrite_price or existing_price <= 0:
+                updates["price"] = seed["price"]
+            if overwrite_stock or existing_stock is None:
+                updates["stock"] = seed["stock"]
+            sb.table("catalog").update(updates).eq("id", item_id).execute()
+            updated += 1
+            continue
+
+        sb.table("catalog").insert(seed).execute()
+        created += 1
+
+    archived = 0
+    if archive_missing:
+        all_rows = sb.table("catalog").select("id,is_archived").execute().data or []
+        missing_ids = [
+            str(row.get("id"))
+            for row in all_rows
+            if row.get("id") and str(row.get("id")) not in seed_by_id and not bool(row.get("is_archived"))
+        ]
+        if missing_ids:
+            sb.table("catalog").update({"is_archived": True}).in_("id", missing_ids).execute()
+            archived = len(missing_ids)
+
+    invalidate_catalog_cache()
+    return {
+        "discovered": len(seed_rows),
+        "created": created,
+        "updated": updated,
+        "archived": archived,
+    }
+
+
 def normalize_aggregate_deal_type(value: str) -> str:
     cleaned = (value or "").strip().lower()
     if cleaned not in AGGREGATE_DEAL_TYPES:
@@ -1193,6 +1397,12 @@ class AdminInventoryUpdatePayload(BaseModel):
 
 class AdminInventoryDeletePayload(BaseModel):
     password: str = Field(min_length=8, max_length=128)
+
+
+class AdminInventoryPopulatePayload(BaseModel):
+    overwrite_price: bool = False
+    overwrite_stock: bool = False
+    archive_missing: bool = False
 
 
 class AdminAggregateDealCreatePayload(BaseModel):
@@ -2394,12 +2604,23 @@ def normalize_operations_credit_status(
     if is_credit_account_spendable(snapshot.get("status")):
         return "approved"
 
-    status_hint = normalize_credit_application_status(latest_application_status or snapshot.get("status"))
-    if status_hint in {"submitted", "under_review", "pending_documents"}:
-        return "submitted"
-    if status_hint == "rejected":
-        return "rejected"
-    return "not_applied"
+    latest_status_raw = str(latest_application_status or "").strip()
+    if latest_status_raw:
+        latest_status = normalize_credit_application_status(latest_status_raw)
+        if latest_status in {"submitted", "under_review", "pending_documents"}:
+            return "submitted"
+        if latest_status == "rejected":
+            return "rejected"
+        if latest_status == "approved":
+            return "approved"
+
+    snapshot_status_raw = str(snapshot.get("status") or "").strip()
+    if snapshot_status_raw:
+        snapshot_status = normalize_credit_application_status(snapshot_status_raw)
+        if snapshot_status == "rejected":
+            return "rejected"
+
+    return "none"
 
 
 def normalize_consignment_status(value: Optional[str]) -> str:
@@ -3311,7 +3532,7 @@ async def admin_auth_session(authorization: Optional[str] = Header(default=None)
 
 
 @app.get("/api/admin/inventory")
-async def admin_list_inventory(authorization: Optional[str] = Header(default=None)):
+async def admin_list_inventory(request: Request, authorization: Optional[str] = Header(default=None)):
     admin = require_admin_session(authorization)
     sb = ensure_service_supabase()
     try:
@@ -3326,6 +3547,7 @@ async def admin_list_inventory(authorization: Optional[str] = Header(default=Non
         normalized_row = dict(row)
         if not normalized_row.get("imageUrl") and normalized_row.get("image_url"):
             normalized_row["imageUrl"] = normalized_row.get("image_url")
+        normalized_row["imageUrl"] = resolve_inventory_image_url(normalized_row.get("imageUrl"), request)
         try:
             current_name = str(row.get("name") or "").strip()
             current_type = str(row.get("type") or "").strip() or "ITEM"
@@ -3349,6 +3571,69 @@ async def admin_list_inventory(authorization: Optional[str] = Header(default=Non
         invalidate_catalog_cache()
 
     return {"count": len(normalized_items), "items": normalized_items, "admin": {"name": admin["name"], "email": admin["email"]}}
+
+
+@app.post("/api/admin/inventory/populate-from-folder")
+async def admin_populate_inventory_from_folder(
+    request: Request,
+    payload: Optional[AdminInventoryPopulatePayload] = None,
+    authorization: Optional[str] = Header(default=None),
+):
+    admin = require_admin_session(authorization)
+    sb = ensure_service_supabase()
+    options = payload or AdminInventoryPopulatePayload()
+    result = sync_catalog_with_inventory_folder(
+        sb,
+        overwrite_price=options.overwrite_price,
+        overwrite_stock=options.overwrite_stock,
+        archive_missing=options.archive_missing,
+    )
+
+    audit_log(
+        event_type="ADMIN_INVENTORY_POPULATED_FROM_FOLDER",
+        user_id=admin["email"],
+        description="Catalog synchronized from local inventory folder.",
+        metadata={
+            "inventory_dir": INVENTORY_ASSETS_DIR,
+            **result,
+            "overwrite_price": options.overwrite_price,
+            "overwrite_stock": options.overwrite_stock,
+            "archive_missing": options.archive_missing,
+        },
+    )
+
+    if result["discovered"] <= 0:
+        return {
+            "status": "no_files_found",
+            **result,
+            "inventory_dir": INVENTORY_ASSETS_DIR,
+            "items": [],
+            "admin": {"name": admin["name"], "email": admin["email"]},
+        }
+
+    current_rows = (
+        sb.table("catalog")
+        .select("*")
+        .order("name")
+        .execute()
+        .data
+        or []
+    )
+    items = []
+    for row in current_rows:
+        row_copy = dict(row)
+        if not row_copy.get("imageUrl") and row_copy.get("image_url"):
+            row_copy["imageUrl"] = row_copy.get("image_url")
+        row_copy["imageUrl"] = resolve_inventory_image_url(row_copy.get("imageUrl"), request)
+        items.append(row_copy)
+
+    return {
+        "status": "synchronized",
+        **result,
+        "inventory_dir": INVENTORY_ASSETS_DIR,
+        "items": items,
+        "admin": {"name": admin["name"], "email": admin["email"]},
+    }
 
 
 @app.post("/api/admin/inventory")
@@ -4828,7 +5113,7 @@ async def admin_operations_customers(
             "full_name": fallback_name,
             "email": "",
             "phone": None,
-            "credit_status": "not_applied",
+            "credit_status": "none",
             "credit_limit": 0.0,
             "available_credit": 0.0,
             "total_orders": 0,
@@ -6348,6 +6633,26 @@ async def health_check():
     }
 
 
+@app.get("/api/inventory/assets/{filename}")
+async def get_inventory_asset(filename: str):
+    safe_name = Path(filename).name
+    if safe_name != filename:
+        raise HTTPException(status_code=400, detail="Invalid inventory asset path.")
+
+    extension = Path(safe_name).suffix.lower()
+    if extension not in INVENTORY_IMAGE_ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=404, detail="Inventory asset not found.")
+
+    root = Path(INVENTORY_ASSETS_DIR).resolve()
+    target = (root / safe_name).resolve()
+    if root not in target.parents:
+        raise HTTPException(status_code=400, detail="Invalid inventory asset path.")
+    if not target.exists() or not target.is_file():
+        raise HTTPException(status_code=404, detail="Inventory asset not found.")
+
+    return FileResponse(str(target))
+
+
 @app.get("/api/catalog")
 async def get_catalog(request: Request):
     """
@@ -6360,6 +6665,9 @@ async def get_catalog(request: Request):
         normalized_products: list[dict[str, Any]] = []
         for row in products:
             normalized_row = dict(row)
+            if not normalized_row.get("imageUrl") and normalized_row.get("image_url"):
+                normalized_row["imageUrl"] = normalized_row.get("image_url")
+            normalized_row["imageUrl"] = resolve_inventory_image_url(normalized_row.get("imageUrl"), request)
             try:
                 item_name, item_type, _ = normalize_inventory_name_and_type(
                     str(row.get("name") or ""),
