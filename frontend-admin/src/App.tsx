@@ -47,7 +47,7 @@ function App() {
         }
       >
         <Route index element={<Dashboard />} />
-        {/* We will add more routes for inventory, orders, etc., here later */}
+        {/* Admin sections */}
         <Route path="inventory" element={<Inventory />} />
         <Route path="deals" element={<AggregateDeals />} />
         <Route path="orders" element={<Orders />} />
