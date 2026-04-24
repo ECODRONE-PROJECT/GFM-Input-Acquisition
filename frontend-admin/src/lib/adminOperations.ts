@@ -9,7 +9,7 @@ export type AdminCustomer = {
   full_name: string;
   email: string;
   phone: string | null;
-  credit_status: 'approved' | 'submitted' | 'not_applied' | 'rejected';
+  credit_status: 'approved' | 'submitted' | 'none' | 'rejected' | 'not_applied';
   credit_limit: number;
   available_credit: number;
   total_orders: number;

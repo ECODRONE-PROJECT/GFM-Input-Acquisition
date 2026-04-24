@@ -684,9 +684,9 @@ export default function DashboardOrdersPage() {
                             </td>
                             <td style={{ padding: '1.5rem' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#e2f5e8', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '4px' }}>
-                                   <img src={order.display_image} alt={order.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                </div>
+                                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#e2f5e8', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '4px' }}>
+                                   <img src={order.display_image} alt={order.display_name} style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }} />
+                                 </div>
                                 <div>
                                   <div style={{ fontWeight: 800, color: '#1a1c1b', fontSize: '0.95rem', marginBottom: '0.2rem' }}>{order.display_name}</div>
                                   <div style={{ color: '#8c9196', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>{order.display_category} • {order.total_units || 0} UNITS</div>

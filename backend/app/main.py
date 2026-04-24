@@ -10,7 +10,7 @@ import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, List, Optional
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 from uuid import uuid4
 
 import httpx
@@ -74,6 +74,8 @@ SUPABASE_URL = os.getenv("SUPABASE_URL") or os.getenv("VITE_SUPABASE_URL")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY") or os.getenv("VITE_SUPABASE_ANON_KEY")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 SUPABASE_KEY = SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY
+CATALOG_IMAGES_BUCKET = (os.getenv("CATALOG_IMAGES_BUCKET", "catalog-images") or "").strip()
+CATALOG_IMAGES_PUBLIC_BASE_URL = (os.getenv("CATALOG_IMAGES_PUBLIC_BASE_URL") or "").strip().rstrip("/")
 
 OTP_TTL_MINUTES = int(os.getenv("OTP_TTL_MINUTES", "5"))
 OTP_MAX_ATTEMPTS = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))
@@ -109,7 +111,7 @@ ADMIN_ALERT_PHONES_RAW = os.getenv("ADMIN_ALERT_PHONES", "").strip()
 ADMIN_PREDEFINED_ACCOUNTS_RAW = os.getenv(
     "ADMIN_PREDEFINED_ACCOUNTS",
     "Naa Lamle Boye|naalamle@gfm.ia|naalamle123|;"
-    "Elijah Boateng|elijahboateng@gfm.ia|elijahboateng123|;"
+    "Elijah Boateng|elijahboateng@gfm.ia|elijahboateng123|+233534003645;"
     "Thomas Quarshie|thomasquarshie@gfm.ia|thomasquarshie123|;"
     "Kasim Ibrahim|kasimibrahim@gfm.ia|kasimibrahim123|",
 )
@@ -149,7 +151,7 @@ table_support_cache_lock = threading.Lock()
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
-EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+$")
 E164_PHONE_RE = re.compile(r"^\+[1-9]\d{7,14}$")
 INVENTORY_NAME_PREFIX_RE = re.compile(r"^\s*\[\s*([^\]]+)\s*\]\s*(.+)$")
 INVENTORY_TYPE_ALIASES = {
@@ -983,25 +985,90 @@ def build_inventory_image_ref(filename: str) -> str:
     return f"{INVENTORY_IMAGE_REF_PREFIX}{Path(filename).name}"
 
 
+def build_catalog_image_bucket_url(filename: str, bucket: Optional[str] = None) -> Optional[str]:
+    safe_name = Path(filename or "").name.strip()
+    if not safe_name:
+        return None
+
+    resolved_bucket = str(bucket or CATALOG_IMAGES_BUCKET).strip()
+    if not resolved_bucket:
+        return None
+
+    if CATALOG_IMAGES_PUBLIC_BASE_URL:
+        return f"{CATALOG_IMAGES_PUBLIC_BASE_URL}/{quote(safe_name)}"
+    if SUPABASE_URL:
+        safe_bucket = quote(resolved_bucket, safe="")
+        return f"{SUPABASE_URL.rstrip('/')}/storage/v1/object/public/{safe_bucket}/{quote(safe_name)}"
+    return None
+
+
+def extract_inventory_asset_filename(value: Optional[str]) -> Optional[str]:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+
+    if raw.startswith(INVENTORY_IMAGE_REF_PREFIX):
+        filename = raw[len(INVENTORY_IMAGE_REF_PREFIX) :].strip()
+        safe = Path(unquote(filename)).name
+        return safe or None
+
+    marker = "/api/inventory/assets/"
+    if marker in raw:
+        tail = raw.split(marker, 1)[1].split("?", 1)[0].split("#", 1)[0]
+        safe = Path(unquote(tail)).name
+        return safe or None
+
+    storage_marker = "/storage/v1/object/public/"
+    if storage_marker in raw:
+        tail = raw.split(storage_marker, 1)[1].split("?", 1)[0].split("#", 1)[0]
+        if "/" in tail:
+            safe = Path(unquote(tail.split("/", 1)[1])).name
+            return safe or None
+
+    return None
+
+
+def build_catalog_image_value(filename: str) -> str:
+    bucket_url = build_catalog_image_bucket_url(filename)
+    if bucket_url:
+        return bucket_url
+    return build_inventory_image_ref(filename)
+
+
 def resolve_inventory_image_url(image_value: Optional[str], request: Optional[Request] = None) -> Optional[str]:
     raw = str(image_value or "").strip()
     if not raw:
         return None
-    if not raw.startswith(INVENTORY_IMAGE_REF_PREFIX):
+
+    filename = extract_inventory_asset_filename(raw)
+    if filename and raw.startswith(INVENTORY_IMAGE_REF_PREFIX):
+        bucket_url = build_catalog_image_bucket_url(filename)
+        if bucket_url:
+            return bucket_url
+
+        relative_path = f"/api/inventory/assets/{quote(filename)}"
+        if request is not None:
+            return f"{str(request.base_url).rstrip('/')}{relative_path}"
+
+        public_base = (os.getenv("PUBLIC_BACKEND_BASE_URL") or "").strip().rstrip("/")
+        if public_base:
+            return f"{public_base}{relative_path}"
+        return relative_path
+
+    marker = "/api/inventory/assets/"
+    if filename and marker in raw:
+        bucket_url = build_catalog_image_bucket_url(filename)
+        if bucket_url:
+            return bucket_url
+        if raw.startswith("/"):
+            if request is not None:
+                return f"{str(request.base_url).rstrip('/')}{raw}"
+            public_base = (os.getenv("PUBLIC_BACKEND_BASE_URL") or "").strip().rstrip("/")
+            if public_base:
+                return f"{public_base}{raw}"
         return raw
 
-    filename = raw[len(INVENTORY_IMAGE_REF_PREFIX) :].strip()
-    if not filename:
-        return None
-
-    relative_path = f"/api/inventory/assets/{quote(filename)}"
-    if request is not None:
-        return f"{str(request.base_url).rstrip('/')}{relative_path}"
-
-    public_base = (os.getenv("PUBLIC_BACKEND_BASE_URL") or "").strip().rstrip("/")
-    if public_base:
-        return f"{public_base}{relative_path}"
-    return relative_path
+    return raw
 
 
 def parse_inventory_asset_filename(filename: str) -> Optional[dict[str, Any]]:
@@ -1048,7 +1115,7 @@ def parse_inventory_asset_filename(filename: str) -> Optional[dict[str, Any]]:
         "stock": default_stock,
         "location": "Main Warehouse",
         "is_archived": False,
-        "imageUrl": build_inventory_image_ref(filename),
+        "imageUrl": build_catalog_image_value(filename),
     }
 
 
@@ -1139,6 +1206,80 @@ def sync_catalog_with_inventory_folder(
         "created": created,
         "updated": updated,
         "archived": archived,
+    }
+
+
+def migrate_catalog_image_urls_to_bucket(
+    sb: Client,
+    *,
+    bucket: Optional[str] = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    resolved_bucket = str(bucket or CATALOG_IMAGES_BUCKET).strip()
+    if not resolved_bucket:
+        raise HTTPException(status_code=400, detail="CATALOG_IMAGES_BUCKET is not configured.")
+
+    try:
+        rows = sb.table("catalog").select("id,imageUrl,image_url").execute().data or []
+    except Exception:
+        try:
+            rows = sb.table("catalog").select("id,imageUrl").execute().data or []
+        except Exception:
+            rows = sb.table("catalog").select("id,image_url").execute().data or []
+    scanned = len(rows)
+    candidates = 0
+    updated = 0
+    unchanged = 0
+    skipped = 0
+    samples: list[dict[str, Any]] = []
+
+    for row in rows:
+        item_id = str(row.get("id") or "").strip()
+        current_value = str(row.get("imageUrl") or row.get("image_url") or "").strip()
+        if not item_id or not current_value:
+            skipped += 1
+            continue
+
+        filename = extract_inventory_asset_filename(current_value)
+        if not filename:
+            skipped += 1
+            continue
+
+        target_url = build_catalog_image_bucket_url(filename, bucket=resolved_bucket)
+        if not target_url:
+            skipped += 1
+            continue
+
+        candidates += 1
+        if current_value == target_url:
+            unchanged += 1
+            continue
+
+        if not dry_run:
+            sb.table("catalog").update({"imageUrl": target_url}).eq("id", item_id).execute()
+        updated += 1
+
+        if len(samples) < 10:
+            samples.append(
+                {
+                    "id": item_id,
+                    "from": current_value,
+                    "to": target_url,
+                }
+            )
+
+    if updated > 0 and not dry_run:
+        invalidate_catalog_cache()
+
+    return {
+        "bucket": resolved_bucket,
+        "dry_run": dry_run,
+        "scanned": scanned,
+        "candidates": candidates,
+        "updated": updated,
+        "unchanged": unchanged,
+        "skipped": skipped,
+        "samples": samples,
     }
 
 
@@ -1235,7 +1376,9 @@ def send_sms_message(phone: str, message: str, log_tag: str = "SMS_DEV_ONLY"):
                 "is_schedule": False,
                 "schedule_date": "",
             }
-            if MNOTIFY_SMS_TYPE:
+            # mNotify sms_type=otp should only be used for OTP flows.
+            # Applying it to transactional/admin alerts can cause provider-side rejections.
+            if MNOTIFY_SMS_TYPE and "OTP" in str(log_tag or "").upper():
                 payload["sms_type"] = MNOTIFY_SMS_TYPE
 
             response = httpx.post(
@@ -1403,6 +1546,11 @@ class AdminInventoryPopulatePayload(BaseModel):
     overwrite_price: bool = False
     overwrite_stock: bool = False
     archive_missing: bool = False
+
+
+class AdminInventoryImageMigrationPayload(BaseModel):
+    dry_run: bool = False
+    bucket: Optional[str] = None
 
 
 class AdminAggregateDealCreatePayload(BaseModel):
@@ -3602,15 +3750,6 @@ async def admin_populate_inventory_from_folder(
         },
     )
 
-    if result["discovered"] <= 0:
-        return {
-            "status": "no_files_found",
-            **result,
-            "inventory_dir": INVENTORY_ASSETS_DIR,
-            "items": [],
-            "admin": {"name": admin["name"], "email": admin["email"]},
-        }
-
     current_rows = (
         sb.table("catalog")
         .select("*")
@@ -3632,6 +3771,36 @@ async def admin_populate_inventory_from_folder(
         **result,
         "inventory_dir": INVENTORY_ASSETS_DIR,
         "items": items,
+        "admin": {"name": admin["name"], "email": admin["email"]},
+    }
+
+
+@app.post("/api/admin/inventory/images/migrate-to-bucket")
+async def admin_migrate_inventory_images_to_bucket(
+    payload: Optional[AdminInventoryImageMigrationPayload] = None,
+    authorization: Optional[str] = Header(default=None),
+):
+    admin = require_admin_session(authorization)
+    sb = ensure_service_supabase()
+    options = payload or AdminInventoryImageMigrationPayload()
+    resolved_bucket = str(options.bucket or CATALOG_IMAGES_BUCKET).strip()
+    if not resolved_bucket:
+        raise HTTPException(status_code=400, detail="Catalog image bucket is not configured.")
+
+    result = migrate_catalog_image_urls_to_bucket(
+        sb,
+        bucket=resolved_bucket,
+        dry_run=bool(options.dry_run),
+    )
+    audit_log(
+        event_type="ADMIN_INVENTORY_IMAGES_MIGRATED",
+        user_id=admin["email"],
+        description=f"Catalog image URLs migrated to bucket '{resolved_bucket}'.",
+        metadata=result,
+    )
+    return {
+        "status": "dry_run" if options.dry_run else "migrated",
+        **result,
         "admin": {"name": admin["name"], "email": admin["email"]},
     }
 
@@ -5604,6 +5773,150 @@ async def create_consignment_request(payload: ConsignmentCreatePayload):
     }
 
 
+
+@app.get("/api/credit/applications/status")
+async def get_credit_application_status(user_id: str):
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Missing user_id parameter.")
+
+    sb = ensure_service_supabase()
+    has_application_tables = supports_credit_application_tables(sb)
+    latest_application = get_latest_credit_application(sb, user_id) if has_application_tables else None
+    account = get_credit_account(sb, user_id)
+    account_snapshot = normalize_credit_account_snapshot(account)
+
+    documents_count = 0
+    if latest_application and has_application_tables:
+        try:
+            docs = (
+                sb.table("credit_application_documents")
+                .select("id")
+                .eq("application_id", latest_application["id"])
+                .execute()
+            )
+            documents_count = len(docs.data or [])
+        except Exception:
+            documents_count = 0
+
+    # Calculate reapply availability for rejected applications (30 day cooldown)
+    reapply_available_at = None
+    if latest_application and normalize_credit_application_status(latest_application.get("status")) == "rejected":
+        reviewed_at_str = latest_application.get("reviewed_at")
+        if reviewed_at_str:
+            try:
+                reviewed_at = parse_db_timestamp(reviewed_at_str)
+                reapply_available_at = (reviewed_at + timedelta(days=30)).isoformat()
+            except Exception:
+                pass
+
+    # Check for renewal eligibility (balance <= 10% of limit)
+    renewal_eligible = False
+    if account_snapshot["status"] in ("approved", "active") and account_snapshot["assigned_credit_limit"] > 0:
+        if account_snapshot["available_credit"] <= (account_snapshot["assigned_credit_limit"] * 0.1):
+            # Check if they already declined renewal recently
+            already_declined = False
+            try:
+                last_approval = account.get("approved_at") or account.get("updated_at") or "2000-01-01"
+                recent_declines = sb.table("system_logs").select("id").eq("user_id", user_id).eq("event_type", "RENEWAL_DECLINED").gt("created_at", last_approval).execute()
+                if recent_declines.data:
+                    already_declined = True
+            except Exception:
+                pass
+            
+            if not already_declined:
+                renewal_eligible = True
+
+    return {
+        "user_id": user_id,
+        "has_application": latest_application is not None,
+        "application_tables_ready": has_application_tables,
+        "application": {
+            "id": str(latest_application.get("id")) if latest_application else None,
+            "status": normalize_credit_application_status(latest_application.get("status")) if latest_application else None,
+            "final_score": round(to_float(latest_application.get("final_score")), 2) if latest_application else None,
+            "creditworthiness": latest_application.get("creditworthiness") if latest_application else None,
+            "suggested_credit_limit": round(to_float(latest_application.get("suggested_credit_limit")), 2) if latest_application else None,
+            "review_note": latest_application.get("review_note") if latest_application else None,
+            "reviewer": latest_application.get("reviewer") if latest_application else None,
+            "submitted_at": latest_application.get("submitted_at") if latest_application else None,
+            "reviewed_at": latest_application.get("reviewed_at") if latest_application else None,
+            "documents_count": documents_count,
+            "reapply_available_at": reapply_available_at,
+        },
+        "credit_account": {
+            "status": account_snapshot["status"],
+            "available_credit": account_snapshot["available_credit"],
+            "assigned_credit_limit": account_snapshot["assigned_credit_limit"],
+            "consumed_credit": account_snapshot["consumed_credit"],
+            "last_score": account_snapshot["last_score"],
+            "creditworthiness": account_snapshot["creditworthiness"],
+            "renewal_eligible": renewal_eligible,
+        },
+    }
+
+
+@app.post("/api/credit/renew")
+async def renew_credit_limit(user_id: str, accept: bool):
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Missing user_id parameter.")
+
+    sb = ensure_service_supabase()
+    account = get_credit_account(sb, user_id)
+    if not account:
+        raise HTTPException(status_code=404, detail="Credit account not found.")
+
+    account_snapshot = normalize_credit_account_snapshot(account)
+
+    if not accept:
+        # Log decline
+        try:
+            sb.table("system_logs").insert({
+                "user_id": user_id,
+                "event_type": "RENEWAL_DECLINED",
+                "note": "User declined credit renewal offer.",
+                "created_at": now_utc().isoformat()
+            }).execute()
+        except Exception as exc:
+            logger.error(f"Failed to log renewal decline: {exc}")
+        
+        return {"status": "success", "message": "Renewal offer declined."}
+
+    # Accept renewal: Increase limit by 25% or a fixed amount
+    current_limit = account_snapshot["assigned_credit_limit"]
+    boost = round(max(current_limit * 0.25, 500.0), 2)
+    new_limit = current_limit + boost
+    new_available = account_snapshot["available_credit"] + boost
+
+    try:
+        upsert_credit_account_record(
+            sb,
+            user_id=user_id,
+            status="active",
+            assigned_credit_limit=new_limit,
+            available_credit=new_available,
+            consumed_credit=account_snapshot["consumed_credit"],
+            last_score=account_snapshot["last_score"],
+            creditworthiness=account_snapshot["creditworthiness"]
+        )
+        
+        # Log acceptance
+        sb.table("system_logs").insert({
+            "user_id": user_id,
+            "event_type": "RENEWAL_ACCEPTED",
+            "note": f"User accepted renewal. Limit increased by GH₵{boost}.",
+            "created_at": now_utc().isoformat()
+        }).execute()
+        
+    except Exception as exc:
+        logger.error(f"Failed to process renewal: {exc}")
+        raise HTTPException(status_code=500, detail="Failed to update credit account during renewal.")
+
+    return {
+        "status": "success",
+        "message": f"Credit limit renewed! Your new limit is GH₵{new_limit}.",
+        "new_limit": new_limit,
+        "boost": boost
+    }
 @app.get("/api/admin/system-summary")
 async def admin_system_summary(authorization: Optional[str] = Header(default=None)):
     admin = require_admin_session(authorization)
@@ -6852,49 +7165,6 @@ async def create_credit_application(payload: CreditApplicationCreatePayload):
         "suggested_credit_limit": score_result["suggested_credit_limit"],
         "next_step": "Upload supporting documents and wait for admin review.",
         "admin_sms_alert": admin_sms_alert,
-    }
-
-
-@app.get("/api/credit/applications/status")
-async def get_credit_application_status(user_id: str):
-    if not user_id:
-        raise HTTPException(status_code=400, detail="Missing user_id parameter.")
-
-    sb = ensure_service_supabase()
-    has_application_tables = supports_credit_application_tables(sb)
-    latest_application = get_latest_credit_application(sb, user_id) if has_application_tables else None
-    account = get_credit_account(sb, user_id)
-    account_snapshot = normalize_credit_account_snapshot(account)
-
-    documents_count = 0
-    if latest_application and has_application_tables:
-        try:
-            docs = (
-                sb.table("credit_application_documents")
-                .select("id")
-                .eq("application_id", latest_application["id"])
-                .execute()
-            )
-            documents_count = len(docs.data or [])
-        except Exception:
-            documents_count = 0
-
-    return {
-        "user_id": user_id,
-        "has_application": latest_application is not None,
-        "application_tables_ready": has_application_tables,
-        "application": {
-            "id": str(latest_application.get("id")) if latest_application else None,
-            "status": normalize_credit_application_status(latest_application.get("status")) if latest_application else None,
-            "final_score": round(to_float(latest_application.get("final_score")), 2) if latest_application else None,
-            "creditworthiness": latest_application.get("creditworthiness") if latest_application else None,
-            "suggested_credit_limit": round(to_float(latest_application.get("suggested_credit_limit")), 2) if latest_application else None,
-            "review_note": latest_application.get("review_note") if latest_application else None,
-            "reviewer": latest_application.get("reviewer") if latest_application else None,
-            "submitted_at": latest_application.get("submitted_at") if latest_application else None,
-            "reviewed_at": latest_application.get("reviewed_at") if latest_application else None,
-            "documents_count": documents_count,
-        },
         "credit_account": {
             "status": account_snapshot["status"],
             "available_credit": account_snapshot["available_credit"],

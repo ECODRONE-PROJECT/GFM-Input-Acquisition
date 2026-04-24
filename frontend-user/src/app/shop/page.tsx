@@ -8,6 +8,7 @@ import {
   joinAggregateDeal,
   verifyAggregateDealPayment,
   fetchCreditApplicationStatus,
+  submitConsignmentRequest,
   type AggregateDeal,
   type CatalogInput,
   type CreditApplicationStatusResponse,
@@ -97,6 +98,12 @@ export default function Shop() {
   const [creditStatus, setCreditStatus] = useState<CreditApplicationStatusResponse | null>(null);
   const [consignLoading, setConsignLoading] = useState(false);
   const [consignSuccess, setConsignSuccess] = useState(false);
+  const [consignError, setConsignError] = useState('');
+  const [consignCategory, setConsignCategory] = useState('');
+  const [consignProductName, setConsignProductName] = useState('');
+  const [consignQuantity, setConsignQuantity] = useState('');
+  const [consignUnit, setConsignUnit] = useState('tonnes');
+  const [consignExpectedPrice, setConsignExpectedPrice] = useState('');
   const canConsign = !!(creditStatus?.has_application || (creditStatus?.credit_account?.status === 'active'));
 
   // Filters State
@@ -417,6 +424,64 @@ export default function Shop() {
       navigate('/login');
     } catch (e) {
       console.error('Logout failed', e);
+    }
+  };
+
+  const resetConsignmentForm = () => {
+    setConsignCategory('');
+    setConsignProductName('');
+    setConsignQuantity('');
+    setConsignUnit('tonnes');
+    setConsignExpectedPrice('');
+    setConsignError('');
+    setConsignSuccess(false);
+    setConsignLoading(false);
+  };
+
+  const closeConsignmentModal = () => {
+    setIsConsignmentModalOpen(false);
+    resetConsignmentForm();
+  };
+
+  const handleConsignmentSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!user?.id) {
+      navigate('/login?redirect=%2Fshop');
+      return;
+    }
+
+    const quantity = Number(consignQuantity);
+    const expectedPrice = Number(consignExpectedPrice);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      setConsignError('Quantity must be greater than 0.');
+      return;
+    }
+    if (!Number.isFinite(expectedPrice) || expectedPrice < 0) {
+      setConsignError('Expected price must be 0 or higher.');
+      return;
+    }
+
+    setConsignLoading(true);
+    setConsignError('');
+    try {
+      await submitConsignmentRequest({
+        userId: user.id,
+        product_category: consignCategory,
+        product_name: consignProductName.trim() || null,
+        quantity,
+        unit: consignUnit,
+        expected_price: expectedPrice,
+      });
+      setConsignSuccess(true);
+      setConsignCategory('');
+      setConsignProductName('');
+      setConsignQuantity('');
+      setConsignUnit('tonnes');
+      setConsignExpectedPrice('');
+    } catch (err) {
+      setConsignError(err instanceof Error ? err.message : 'Could not submit consignment request.');
+    } finally {
+      setConsignLoading(false);
     }
   };
 
@@ -865,12 +930,27 @@ export default function Shop() {
                 
                 return (
                   <div key={product.id} className="product-card">
-                    <div style={{ position: 'relative', height: '180px', width: '100%', backgroundColor: '#f4f4f1' }}>
+                    <div
+                      style={{
+                        position: 'relative',
+                        height: '180px',
+                        width: '100%',
+                        backgroundColor: '#ffffff',
+                        borderBottom: '1px solid rgba(8, 76, 23, 0.08)',
+                      }}
+                    >
                       <img
                         src={product.imageUrl || (isSeed ? '/seed.png' : '/fertilizer.png')} 
                         alt={product.name}
                         loading="eager"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          objectPosition: 'center',
+                          padding: '0.55rem',
+                          filter: 'drop-shadow(0 1px 2px rgba(8, 76, 23, 0.10))',
+                        }}
                       />
                       {tag && <div style={{ position: 'absolute', top: '1rem', left: '1rem' }}>{tag}</div>}
                     </div>
@@ -1062,11 +1142,8 @@ export default function Shop() {
                 <h3 style={{ margin: 0, fontSize: '1.4rem', color: '#111827', fontWeight: 800, letterSpacing: '-0.02em' }}>Sell Excess Inventory</h3>
                 <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.75rem', color: '#6b7280', fontWeight: 600 }}>List your products on the GrowForMe marketplace</p>
               </div>
-              <button 
-                onClick={() => {
-                  setIsConsignmentModalOpen(false);
-                  setConsignSuccess(false);
-                }} 
+              <button
+                onClick={closeConsignmentModal}
                 style={{ border: 'none', background: '#eeeeeb', color: '#4b5563', padding: '0.5rem', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <CloseIcon size={20} />
@@ -1084,31 +1161,26 @@ export default function Shop() {
                   <p style={{ fontSize: '0.9rem', color: '#4b5563', lineHeight: 1.6, marginBottom: '2rem' }}>
                     We've received your request to consign your excess items. An agent will contact you shortly to verify weights and arrange collection.
                   </p>
-                  <button 
-                    onClick={() => {
-                      setIsConsignmentModalOpen(false);
-                      setConsignSuccess(false);
-                    }}
+                  <button
+                    onClick={closeConsignmentModal}
                     style={{ width: '100%', padding: '1rem', backgroundColor: '#084c17', color: 'white', borderRadius: '12px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
                   >
                     Back to Catalog
                   </button>
                 </div>
               ) : (
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    setConsignLoading(true);
-                    setTimeout(() => {
-                      setConsignLoading(false);
-                      setConsignSuccess(true);
-                    }, 1500);
-                  }}
+                <form
+                  onSubmit={handleConsignmentSubmit}
                   style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#4b5563', letterSpacing: '0.05em' }}>PRODUCT CATEGORY</label>
-                    <select required style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid #e5e7eb', backgroundColor: '#f9f9f6', fontSize: '0.9rem', fontWeight: 600, outline: 'none' }}>
+                    <select
+                      required
+                      value={consignCategory}
+                      onChange={(e) => setConsignCategory(e.target.value)}
+                      style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid #e5e7eb', backgroundColor: '#f9f9f6', fontSize: '0.9rem', fontWeight: 600, outline: 'none' }}
+                    >
                       <option value="">Select Category</option>
                       <option value="maize">Maize (Seed/Grain)</option>
                       <option value="fertilizer">Excess Fertilizer</option>
@@ -1118,10 +1190,36 @@ export default function Shop() {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#4b5563', letterSpacing: '0.05em' }}>PRODUCT NAME (OPTIONAL)</label>
+                    <input
+                      type="text"
+                      maxLength={180}
+                      placeholder="e.g. Pioneer Hybrid Seed"
+                      value={consignProductName}
+                      onChange={(e) => setConsignProductName(e.target.value)}
+                      style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid #e5e7eb', backgroundColor: '#f9f9f6', fontSize: '0.9rem', fontWeight: 600, outline: 'none' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#4b5563', letterSpacing: '0.05em' }}>QUANTITY & UNIT</label>
                     <div style={{ display: 'flex', gap: '1rem' }}>
-                      <input required type="number" placeholder="0.00" style={{ flex: 2, padding: '1rem', borderRadius: '12px', border: '1px solid #e5e7eb', backgroundColor: '#f9f9f6', fontSize: '0.9rem', fontWeight: 600, outline: 'none' }} />
-                      <select required style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '1px solid #e5e7eb', backgroundColor: '#f9f9f6', fontSize: '0.9rem', fontWeight: 600, outline: 'none' }}>
+                      <input
+                        required
+                        min={0.01}
+                        step="0.01"
+                        type="number"
+                        placeholder="0.00"
+                        value={consignQuantity}
+                        onChange={(e) => setConsignQuantity(e.target.value)}
+                        style={{ flex: 2, padding: '1rem', borderRadius: '12px', border: '1px solid #e5e7eb', backgroundColor: '#f9f9f6', fontSize: '0.9rem', fontWeight: 600, outline: 'none' }}
+                      />
+                      <select
+                        required
+                        value={consignUnit}
+                        onChange={(e) => setConsignUnit(e.target.value)}
+                        style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '1px solid #e5e7eb', backgroundColor: '#f9f9f6', fontSize: '0.9rem', fontWeight: 600, outline: 'none' }}
+                      >
                         <option value="tonnes">Tonnes</option>
                         <option value="bags">Bags (50kg)</option>
                         <option value="units">Units</option>
@@ -1131,7 +1229,16 @@ export default function Shop() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#4b5563', letterSpacing: '0.05em' }}>EXPECTED PRICE (GHS)</label>
-                    <input required type="number" placeholder="Enter your ask price" style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid #e5e7eb', backgroundColor: '#f9f9f6', fontSize: '0.9rem', fontWeight: 600, outline: 'none' }} />
+                    <input
+                      required
+                      min={0}
+                      step="0.01"
+                      type="number"
+                      placeholder="Enter your ask price"
+                      value={consignExpectedPrice}
+                      onChange={(e) => setConsignExpectedPrice(e.target.value)}
+                      style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid #e5e7eb', backgroundColor: '#f9f9f6', fontSize: '0.9rem', fontWeight: 600, outline: 'none' }}
+                    />
                   </div>
 
                   <div style={{ padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: '12px', border: '1px solid #dcfce7' }}>
@@ -1139,6 +1246,12 @@ export default function Shop() {
                       GrowForMe takes a 5% commission on successful sales. Your listing will be used to offset any outstanding credit balances first.
                     </p>
                   </div>
+
+                  {consignError && (
+                    <div style={{ padding: '0.9rem 1rem', borderRadius: '12px', border: '1px solid #fecaca', backgroundColor: '#fef2f2', color: '#991b1b', fontSize: '0.82rem', fontWeight: 600 }}>
+                      {consignError}
+                    </div>
+                  )}
 
                   <button 
                     type="submit" 

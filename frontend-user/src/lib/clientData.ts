@@ -175,6 +175,7 @@ export type CreditApplicationStatusResponse = {
     submitted_at: string | null;
     reviewed_at: string | null;
     documents_count: number;
+    reapply_available_at?: string | null;
   };
   credit_account: {
     status: string;
@@ -183,9 +184,9 @@ export type CreditApplicationStatusResponse = {
     consumed_credit: number;
     last_score: number;
     creditworthiness: string | null;
+    renewal_eligible?: boolean;
   };
 };
-
 export type CreditApplicationDetailsResponse = {
   application: {
     id: string;
@@ -235,6 +236,40 @@ export type CreditScoreResponse = {
   weights?: Record<string, number>;
   application_id?: string | null;
   application_tables_ready?: boolean;
+};
+
+export type ConsignmentCreatePayload = {
+  userId: string;
+  product_category: string;
+  product_name?: string | null;
+  quantity: number;
+  unit: string;
+  expected_price: number;
+};
+
+export type ConsignmentSubmissionResponse = {
+  status: string;
+  consignment: {
+    id: string;
+    user_id: string;
+    farmer_name: string;
+    farmer_phone?: string | null;
+    product_category: string;
+    product_name?: string | null;
+    quantity: number;
+    unit: string;
+    expected_price: number;
+    status: string;
+    rejection_reason?: string | null;
+    approved_deal_id?: string | null;
+    created_at?: string | null;
+    reviewed_at?: string | null;
+  };
+  admin_sms_alert?: {
+    attempted?: number;
+    queued?: number;
+    failed?: number;
+  };
 };
 
 const CONFIGURED_API_BASE = (import.meta.env.VITE_API_BASE_URL || '').trim();
@@ -521,6 +556,29 @@ export async function verifyPaystackPayment(reference: string): Promise<{
   }>;
 }
 
+export async function submitConsignmentRequest(
+  payload: ConsignmentCreatePayload
+): Promise<ConsignmentSubmissionResponse> {
+  const response = await guardedApiFetch('/consignments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId: payload.userId,
+      product_category: payload.product_category,
+      product_name: payload.product_name?.trim() || null,
+      quantity: payload.quantity,
+      unit: payload.unit,
+      expected_price: payload.expected_price,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response, 'Failed to submit consignment request.'));
+  }
+
+  return response.json() as Promise<ConsignmentSubmissionResponse>;
+}
+
 export async function fetchOrderHistory(userId: string): Promise<OrderHistoryItem[]> {
   if (!userId) {
     return [];
@@ -652,4 +710,26 @@ export async function uploadCreditApplicationDocument(payload: {
     throw new Error(await parseApiError(response, 'Failed to upload document.'));
   }
   return response.json() as Promise<{ status: string; application_id: string }>;
+}
+
+export async function renewCredit(userId: string, accept: boolean): Promise<{
+  status: string;
+  message: string;
+  new_limit?: number;
+  boost?: number;
+}> {
+  const response = await guardedApiFetch(`/credit/renew?user_id=${encodeURIComponent(userId)}&accept=${accept}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response, 'Failed to process credit renewal.'));
+  }
+  return response.json() as Promise<{
+    status: string;
+    message: string;
+    new_limit?: number;
+    boost?: number;
+  }>;
 }

@@ -103,7 +103,7 @@ export default function CartPage() {
                       <img 
                         src={item.imageUrl || (item.type === 'SEED' ? '/seed.png' : '/fertilizer.png')} 
                         alt={item.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '0.35rem' }}
                       />
                     </div>
 

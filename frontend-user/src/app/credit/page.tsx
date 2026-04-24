@@ -12,7 +12,7 @@ import {
 } from '@/lib/clientData';
 import { requireSupabase } from '@/lib/supabase';
 import { Logo } from '@/components/ui/Logo';
-import { ShoppingCart, User, Check, X, ArrowLeft, ChevronRight, ChevronLeft, ShieldCheck, TrendingUp, History, Clock, Copy } from 'lucide-react';
+import { ShoppingCart, User, Check, X, ArrowLeft, ChevronRight, ChevronLeft, ShieldCheck, TrendingUp, History, Clock, Copy, AlertCircle } from 'lucide-react';
 
 // Import Chapter Components
 import { ChapterIdentity } from '@/components/credit/ChapterIdentity';
@@ -21,6 +21,11 @@ import { ChapterFarm } from '@/components/credit/ChapterFarm';
 import { ChapterInfrastructure } from '@/components/credit/ChapterInfrastructure';
 import { ChapterSocial } from '@/components/credit/ChapterSocial';
 import { ChapterSummary } from '@/components/credit/ChapterSummary';
+
+// Import Status Components
+import { CreditDashboard } from '@/components/credit/CreditDashboard';
+import { RejectionState } from '@/components/credit/RejectionState';
+import { RenewalModal } from '@/components/credit/RenewalModal';
 
 const GHS_PER_USD = 15;
 
@@ -85,25 +90,44 @@ export default function CreditPage() {
   const [submitMessage, setSubmitMessage] = useState('');
   const [documentQueue, setDocumentQueue] = useState<{file: File, type: string}[]>([]);
   const [viewingApplication, setViewingApplication] = useState(false);
+  const [showRenewal, setShowRenewal] = useState(false);
+
+  const loadStatus = async () => {
+    if (!userId) return;
+    try {
+      const nextStatus = await fetchCreditApplicationStatus(userId);
+      setStatusData(nextStatus);
+      
+      if (nextStatus.credit_account?.renewal_eligible) {
+        setShowRenewal(true);
+      }
+
+      if (nextStatus.application.id) {
+        const nextDetails = await fetchCreditApplicationDetails(userId, nextStatus.application.id);
+        setDetails(nextDetails);
+        
+        // If we have details, sync the local payload for the "View Details" modal
+        if (nextDetails.application.application_payload) {
+          const remotePayload = nextDetails.application.application_payload as any;
+          setPayload(prev => ({
+            ...prev,
+            ...remotePayload
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load status:', error);
+    }
+  };
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
-    const load = async () => {
+    const init = async () => {
       setLoading(true);
-      try {
-        const nextStatus = await fetchCreditApplicationStatus(userId);
-        setStatusData(nextStatus);
-        if (nextStatus.application.id) {
-          const nextDetails = await fetchCreditApplicationDetails(userId, nextStatus.application.id);
-          setDetails(nextDetails);
-        }
-      } catch (error) {
-        setSubmitError('Failed to load status.');
-      } finally {
-        setLoading(false);
-      }
+      await loadStatus();
+      setLoading(false);
     };
-    void load();
+    void init();
   }, [userId]);
 
   // Pre-fill name from auth metadata
@@ -126,12 +150,6 @@ export default function CreditPage() {
     } else {
       setDocumentQueue(prev => [...prev.filter(item => item.type !== type), { file, type }]);
     }
-  };
-
-  const handleLogout = async () => {
-    const client = requireSupabase();
-    await client.auth.signOut();
-    navigate('/login');
   };
 
   const onSubmit = async () => {
@@ -159,8 +177,7 @@ export default function CreditPage() {
       }
 
       setSubmitMessage('Application submitted successfully!');
-      const nextStatus = await fetchCreditApplicationStatus(userId);
-      setStatusData(nextStatus);
+      await loadStatus();
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Submission failed.');
     } finally {
@@ -217,42 +234,103 @@ export default function CreditPage() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9f9f6' }}>
         <div style={{ animation: 'pulse 2s infinite', fontSize: '1.2rem', fontWeight: 800, color: '#084c17', fontFamily: 'Newsreader, serif' }}>
-          Loading your agronomy form...
+          Loading your agronomy data...
         </div>
       </div>
     );
   }
 
-  const hasSubmitted = statusData?.has_application || statusData?.application?.id;
+  const appStatus = statusData?.application?.status || 'none';
+  const accountStatus = statusData?.credit_account?.status || 'none';
 
-  if (hasSubmitted) {
-    const referenceNumber = `AGR-2026-${statusData?.application?.id?.slice(0, 4)}-${statusData?.application?.id?.slice(-2)}`.toUpperCase();
+  // Determine which UI state to show
+  const isApproved = accountStatus === 'approved' || accountStatus === 'active';
+  const isRejected = appStatus === 'rejected';
+  const isPending = ['submitted', 'under_review', 'pending_documents'].includes(appStatus);
+
+  // 1. Dashboard State (Approved)
+  if (isApproved && statusData) {
+    return (
+      <div style={{ backgroundColor: '#f9f9f6', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
+        <nav style={{ position: 'sticky', top: 0, zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 5%', backgroundColor: 'white', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+          <Logo />
+          <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', flex: 1, justifyContent: 'center' }}>
+            <Link to="/shop" style={{ textDecoration: 'none', color: '#64748b', fontWeight: 600, fontSize: '0.9rem' }}>Catalog</Link>
+            <Link to="/credit" style={{ textDecoration: 'none', color: '#084c17', fontWeight: 700, fontSize: '0.9rem', borderBottom: '2px solid #084c17', paddingBottom: '0.25rem' }}>Credit</Link>
+            <Link to="/orders" style={{ textDecoration: 'none', color: '#64748b', fontWeight: 600, fontSize: '0.9rem' }}>Orders</Link>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', width: '20%', justifyContent: 'flex-end' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#e2f5e8', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#084c17' }}>
+              <User size={20} />
+            </div>
+          </div>
+        </nav>
+
+        <main style={{ maxWidth: '1000px', margin: '4rem auto', padding: '0 2rem' }}>
+          <CreditDashboard 
+            creditAccount={statusData.credit_account} 
+            displayName={displayName} 
+          />
+        </main>
+
+        {showRenewal && (
+          <RenewalModal 
+            userId={userId} 
+            currentLimit={statusData.credit_account.assigned_credit_limit}
+            onClose={(renewed) => {
+              setShowRenewal(false);
+              if (renewed) loadStatus();
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // 2. Rejection State
+  if (isRejected && statusData) {
+    return (
+      <div style={{ backgroundColor: '#f9f9f6', minHeight: '100vh', padding: '4rem 2rem' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <RejectionState application={statusData.application} />
+          <div style={{ marginTop: '3rem', textAlign: 'center' }}>
+            <button 
+              onClick={() => navigate('/shop')}
+              style={{ background: 'transparent', border: 'none', color: '#084c17', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 auto' }}
+            >
+              <ArrowLeft size={18} /> Back to Catalog
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Pending/Review State
+  if (isPending && statusData) {
+    const referenceNumber = `AGR-2026-${statusData.application.id?.slice(0, 4)}-${statusData.application.id?.slice(-2)}`.toUpperCase();
 
     return (
       <div style={{ backgroundColor: '#f9f9f6', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
         <div style={{ backgroundColor: 'white', maxWidth: '1000px', width: '100%', borderRadius: '40px', boxShadow: '0 30px 60px rgba(0,0,0,0.05)', overflow: 'hidden', display: 'flex' }}>
           
-          {/* Left Visual */}
-          <div style={{ width: '28%', position: 'relative', minHeight: '600px' }}>
-            <img 
-              src="/images/success_sprout.png" 
-              alt="Success" 
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(8,76,23,0.1), rgba(0,0,0,0.4))' }} />
+          <div style={{ width: '28%', position: 'relative', minHeight: '600px', backgroundColor: '#084c17', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ color: 'white', textAlign: 'center', padding: '2rem' }}>
+              <ShieldCheck size={80} strokeWidth={1} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+              <div style={{ fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.2em', opacity: 0.5 }}>UNDERWRITING</div>
+            </div>
           </div>
 
-          {/* Right Content Area */}
           <div style={{ flex: 1, padding: '4rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div style={{ width: '64px', height: '64px', backgroundColor: '#e2f5e8', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#084c17', marginBottom: '2rem' }}>
-              <Check size={32} strokeWidth={3} />
+            <div style={{ width: '64px', height: '64px', backgroundColor: '#fef3c7', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d97706', marginBottom: '2rem' }}>
+              <Clock size={32} strokeWidth={3} />
             </div>
 
             <h1 style={{ fontSize: '3rem', fontWeight: 800, color: '#1a1c1b', margin: '0 0 1rem 0', fontFamily: 'Newsreader, serif', lineHeight: 1.1 }}>
-              Submission Successful
+              Application Review
             </h1>
             <p style={{ color: '#64748b', fontSize: '1.2rem', margin: '0 0 3rem 0', lineHeight: 1.5 }}>
-              Your agronomy credit application has been received and added to our review queue.
+              Your agronomy credit application is currently being analyzed by our risk team.
             </p>
 
             <div style={{ backgroundColor: '#fcfcf9', borderRadius: '24px', padding: '2.5rem', border: '1px solid #e2e8f0', marginBottom: '3rem' }}>
@@ -270,11 +348,12 @@ export default function CreditPage() {
               </div>
 
               <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}>
-                <div style={{ color: '#084c17', marginTop: '0.2rem' }}><Clock size={20} /></div>
+                <div style={{ color: '#d97706', marginTop: '0.2rem' }}><AlertCircle size={20} /></div>
                 <div>
-                  <h4 style={{ margin: '0 0 0.25rem 0', fontWeight: 800, color: '#1a1c1b', fontSize: '1rem' }}>Next Steps</h4>
+                  <h4 style={{ margin: '0 0 0.25rem 0', fontWeight: 800, color: '#1a1c1b', fontSize: '1rem' }}>Current Status</h4>
                   <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', lineHeight: 1.5 }}>
-                    Our underwriting team will review your documents within 48 hours. Current Status: <strong style={{color: '#084c17'}}>{statusData?.application?.status === 'under_review' ? 'SUBMITTED' : (statusData?.application?.status?.toUpperCase() || 'SUBMITTED')}</strong>
+                    {appStatus === 'under_review' ? 'Our agents are verifying your documentation.' : 'Waiting for document processing.'} 
+                    We expect to have a decision within 24-48 hours.
                   </p>
                 </div>
               </div>
@@ -285,26 +364,22 @@ export default function CreditPage() {
                 onClick={() => navigate('/orders')}
                 style={{ flex: 1, backgroundColor: '#084c17', color: 'white', border: 'none', borderRadius: '16px', padding: '1.25rem', fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}
               >
-                Return to Dashboard <ChevronRight size={20} />
+                Go to Dashboard <ChevronRight size={20} />
               </button>
               <button 
                 onClick={() => setViewingApplication(true)}
                 style={{ flex: 1, backgroundColor: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '16px', padding: '1.25rem', fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer' }}
               >
-                View Details
+                Review My Data
               </button>
             </div>
-
-            <p style={{ marginTop: '3rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
-              Need help? Contact support at <a href="mailto:support@gfm.ia" style={{ color: '#084c17', fontWeight: 700, textDecoration: 'none' }}>support@gfm.ia</a>
-            </p>
           </div>
-
         </div>
       </div>
     );
   }
 
+  // 4. Default State (Application Form)
   return (
     <div style={{ backgroundColor: '#f9f9f6', minHeight: '100vh', fontFamily: 'Inter, sans-serif', paddingBottom: '4rem' }}>
       

@@ -839,7 +839,7 @@ export default function Orders() {
                       target.dataset.fallbackApplied = '1';
                       target.src = DEFAULT_ORDER_IMAGE;
                     }}
-                    className="w-full h-full object-cover opacity-70 group-hover:scale-110 transition-transform duration-[1.5s]" 
+                    className="w-full h-full object-contain object-center opacity-80 p-3" 
                   />
                   <div className="absolute bottom-5 left-5 z-20 text-white">
                     <p className="font-headline font-extrabold text-xl leading-tight mb-1">{selectedCardTitle}</p>

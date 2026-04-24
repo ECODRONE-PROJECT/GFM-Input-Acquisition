@@ -216,7 +216,7 @@ export default function CheckoutPage() {
                   {items.map(item => (
                     <div key={item.id} style={{ backgroundColor: 'white', padding: '1.25rem', borderRadius: '20px', border: '1px solid #e2e8f0', display: 'flex', gap: '1.5rem', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
                       <div style={{ width: '64px', height: '64px', borderRadius: '12px', backgroundColor: '#f8fafc', flexShrink: 0, overflow: 'hidden' }}>
-                        <img src={item.imageUrl || (item.type === 'SEED' ? '/seed.png' : '/fertilizer.png')} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={item.imageUrl || (item.type === 'SEED' ? '/seed.png' : '/fertilizer.png')} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '0.25rem' }} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#1a1c1b', margin: 0 }}>{item.name}</h3>
